@@ -85,7 +85,12 @@ box_comp <- function(xcol = c(), df = NA) {
                                         ))
   for (var in xcol) {
     df_s1 <- df[, var]
+    df_s1s1 <-data.frame(df_s1)
+    df_s1_fit <- preProcess(df_s1s1,
+                            method = c("center", "scale"))
+    df_s1_trans <- predict(df_s1_fit, df_s1s1)
     
+
     # Calculate quartiles
     var_iqr_lim <- IQR(df_s1) * 1.5
     var_q1 <- quantile(df_s1, probs = c(.25))
@@ -94,9 +99,10 @@ box_comp <- function(xcol = c(), df = NA) {
     var_othigh <- var_q3 + var_iqr_lim
     
     # Subset non-outlier data 
-    var_iqr_df01 <- subset(df, (df_s1 > var_otlow & df_s1 < var_othigh))
+    var_iqr_df01 <- subset(df, (abs(df_s1_trans) < 3))
+    #var_iqr_df01 <- subset(df, (df_s1 > var_otlow & df_s1 < var_othigh))
     df_s2 <- var_iqr_df01[, var]
-    
+
     # Begin calculating measures of centrality & dispersion
     var_mean <- mean(df_s1)
     var_iqr_df01_trunc_mean <- mean(df_s2)
@@ -118,7 +124,7 @@ box_comp <- function(xcol = c(), df = NA) {
     # Configure y-axis min & max to sync graphs
     plot_min <- min(var01_min, var02_min)
     plot_max <- max(var01_max, var02_max)
-    
+    nonoutlier_perc <- round((as.numeric(dim(var_iqr_df01)[1] / as.numeric(dim(df)[1]))) * 100, 1)
     measure_val01 <- c(paste0("Variable: ", var),
                        "",
                        as.character(dim(df)[1]),
@@ -131,16 +137,15 @@ box_comp <- function(xcol = c(), df = NA) {
                        round(var01_range, sig),
                        round(var01_min, sig),
                        round(var01_max, sig),
-                       paste0("+/-", round(var_iqr_lim, 3)),
+                       paste0("+/-", round(var_iqr_lim, sig)),
                        round(var_q1, sig),
                        round(var_q3, sig),
                        round(var_otlow, sig),
                        round(var_othigh, sig),
                        "",
                        as.character(dim(var_iqr_df01)[1]),
-                       paste0(round((as.numeric(dim(var_iqr_df01)[1] / as.numeric(dim(df)[1]))) * 100, 1),
-                              "%"),
-                       100 - round((as.numeric(dim(var_iqr_df01)[1] / as.numeric(dim(df)[1]))) * 100, 1),
+                       paste0(nonoutlier_perc, "%"),
+                       paste0(100 - nonoutlier_perc, "%"),
                        sum(is.na(df_s2)),
                        round(var_iqr_df01_trunc_mean, sig),
                        round(var_iqr_df01_trunc_med, sig),
@@ -194,5 +199,12 @@ box_comp(xcol = biodeg_train_x04_lst01, df = biodeg_train_x04_df01)
 biodeg_train_x05_lst01 = biodeg_train_x03_lst01[-22]
 biodeg_train_x05_df01 <- subset(x = biodeg_train_x01_df01, select = biodeg_train_x05_lst01)
 box_comp(xcol = biodeg_train_x05_lst01, df = biodeg_train_x05_df01)
+```
+```{r}
+biodeg_x01_df01_train_fit01 <- preProcess(biodeg_train_x01_df01,
+                                          method = c("center", "scale"))
+
+biodeg_train_x01_trans_df01 <- predict(biodeg_x01_df01_train_fit01, biodeg_train_x01_df01)
+sapply(biodeg_train_x01_trans_df01, function(x) sum(abs(x) > 3))
 ```
 
