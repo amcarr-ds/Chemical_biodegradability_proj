@@ -74,6 +74,7 @@ hist.data.frame(biodeg_train_x01_trans_df01)
 biodeg_test_x01_trans_df01 <- predict(biodeg_x01_df01_train_fit01, biodeg_test_x01_df01)
 head(biodeg_test_x01_trans_df01, 5)
 ```
+
 ```{r}
 write.csv(biodeg_train_x01_trans_df01,"../data/biodeg_train_trans.csv", row.names = FALSE)
 write.csv(biodeg_test_x01_trans_df01,"../data/biodeg_test_trans.csv", row.names = FALSE)

@@ -1,0 +1,212 @@
+---
+title: "ADS503-02-SP22 - Final Project: Team 3"
+author: "Carr_Aaron"
+date: "06/27/2022"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+header-includes:
+- \usepackage{fvextra}
+- \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+---
+
+# Assignment 1.1
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r global.options, include=TRUE}
+knitr::opts_chunk$set(
+  fig.align = 'center'
+  )
+```
+
+```{r lib, message=FALSE}
+library(AppliedPredictiveModeling)
+library(BioStatR)
+library(car)
+library(caret)
+library(class)
+library(corrplot)
+library(datasets)
+library(dplyr)
+library(e1071)
+library(Hmisc)
+library(mlbench)
+library(ggplot2)
+library(gridExtra)
+library(psych)
+library(randomForest)
+library(RANN)
+library(ROCR)
+library(rpart)
+library(rpart.plot)
+library(scales)
+```
+
+# Importing Train/Test Datasets
+```{r}
+train_x01_df01 <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
+test_x01_df01 <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
+
+train_y01_df01 <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
+test_y01_df01 <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
+
+train_y01_vc01 <- train_y01_df01[["x"]]
+test_y01_vc01 <- test_y01_df01[["x"]]
+```
+
+## Model 1 (*M~1~*): CART DT
+```{r, fig.height=8, fig.width=10}
+train_xy01_df01 <- data.frame(train_x01_df01, train_y01_df01)
+
+# Train model
+train_m1v1_cart <- rpart(x ~ ., data = train_xy01_df01, method = "class")
+rpart.plot(train_m1v1_cart, type = 4)
+
+# Use trained model to predict y on test data
+test_m1v1_cart_y_pred_df01 <- predict(object = train_m1v1_cart, newdata = test_x01_df01, type = "class")
+
+# Create contingency table to review results
+test_m1v1_cart_y_pred_tbl01 <- table(test_y01_df01$x, test_m1v1_cart_y_pred_df01)
+#rownames(test_m1v1_cart_y_pred_tbl01) <- c("Actual: PSI = 0 (-)", "Actual: PSI = 1 (+)")
+#colnames(test_m1v1_cart_y_pred_tbl01) <- c("Predicted: PSI = 0 (-)", "Predicted: PSI = 1 (+)")
+test_m1v1_cart_y_pred_tbl01 <- addmargins(A = test_m1v1_cart_y_pred_tbl01,
+                                          FUN = list(Total = sum), quiet = TRUE)
+print(test_m1v1_cart_y_pred_tbl01)
+
+# Pull values from confusion matrix table
+test_m1v1_cart_y_pred_tp01 <- test_m1v1_cart_y_pred_tbl01[2, 2]
+test_m1v1_cart_y_pred_fn01 <- test_m1v1_cart_y_pred_tbl01[2, 1]
+test_m1v1_cart_y_pred_fp01 <- test_m1v1_cart_y_pred_tbl01[1, 2]
+test_m1v1_cart_y_pred_tn01 <- test_m1v1_cart_y_pred_tbl01[1, 1]
+print(test_m1v1_cart_y_pred_tp01)
+print(test_m1v1_cart_y_pred_fn01)
+print(test_m1v1_cart_y_pred_fp01)
+print(test_m1v1_cart_y_pred_tn01)
+
+# ------------------------------------------------------------------------------
+# Use trained model to predict y on train data
+train_m1v1_cart_y_pred_df01 <- predict(object = train_m1v1_cart, newdata = train_x01_df01, type = "class")
+
+# Create contingency table to review results
+train_m1v1_cart_y_pred_tbl01 <- table(train_y01_df01$x, train_m1v1_cart_y_pred_df01)
+#rownames(train_m1v1_cart_y_pred_tbl01) <- c("Actual: PSI = 0 (-)", "Actual: PSI = 1 (+)")
+#colnames(train_m1v1_cart_y_pred_tbl01) <- c("Predicted: PSI = 0 (-)", "Predicted: PSI = 1 (+)")
+train_m1v1_cart_y_pred_tbl01 <- addmargins(A = train_m1v1_cart_y_pred_tbl01,
+                                           FUN = list(Total = sum), quiet = TRUE)
+print(train_m1v1_cart_y_pred_tbl01)
+
+# Pull values from confusion matrix table
+train_m1v1_cart_y_pred_tp01 <- train_m1v1_cart_y_pred_tbl01[2, 2]
+train_m1v1_cart_y_pred_fn01 <- train_m1v1_cart_y_pred_tbl01[2, 1]
+train_m1v1_cart_y_pred_fp01 <- train_m1v1_cart_y_pred_tbl01[1, 2]
+train_m1v1_cart_y_pred_tn01 <- train_m1v1_cart_y_pred_tbl01[1, 1]
+print(train_m1v1_cart_y_pred_tp01)
+print(train_m1v1_cart_y_pred_fn01)
+print(train_m1v1_cart_y_pred_fp01)
+print(train_m1v1_cart_y_pred_tn01)
+
+# Generate classification evaluation measures
+test_m1v1_cart_acc01 <- (test_m1v1_cart_y_pred_tp01 + test_m1v1_cart_y_pred_tn01) /
+  (test_m1v1_cart_y_pred_tp01 + test_m1v1_cart_y_pred_fn01 + test_m1v1_cart_y_pred_fp01 + test_m1v1_cart_y_pred_tn01)
+
+test_m1v1_cart_err_rate01 <- 1 - test_m1v1_cart_acc01
+test_m1v1_cart_recall01 <- test_m1v1_cart_y_pred_tp01 / (test_m1v1_cart_y_pred_tp01 + test_m1v1_cart_y_pred_fn01)
+test_m1v1_cart_tnr01 <- test_m1v1_cart_y_pred_tn01 / (test_m1v1_cart_y_pred_tn01 + test_m1v1_cart_y_pred_fp01)
+test_m1v1_cart_prec01 <- test_m1v1_cart_y_pred_tp01 / (test_m1v1_cart_y_pred_tp01 + test_m1v1_cart_y_pred_fp01)
+test_m1v1_cart_f101 <- (1 + 1^2) * ((test_m1v1_cart_prec01 * test_m1v1_cart_recall01) /
+                                        ((1^2 * test_m1v1_cart_prec01) + test_m1v1_cart_recall01))
+test_m1v1_cart_plr01 <- test_m1v1_cart_recall01 / (1 - test_m1v1_cart_tnr01)
+
+
+train_m1v1_cart_acc01 <- (train_m1v1_cart_y_pred_tp01 + train_m1v1_cart_y_pred_tn01) /
+  (train_m1v1_cart_y_pred_tp01 + train_m1v1_cart_y_pred_fn01 + train_m1v1_cart_y_pred_fp01 + train_m1v1_cart_y_pred_tn01)
+
+train_m1v1_cart_err_rate01 <- 1 - train_m1v1_cart_acc01
+train_m1v1_cart_recall01 <- train_m1v1_cart_y_pred_tp01 / (train_m1v1_cart_y_pred_tp01 + train_m1v1_cart_y_pred_fn01)
+train_m1v1_cart_tnr01 <- train_m1v1_cart_y_pred_tn01 / (train_m1v1_cart_y_pred_tn01 + train_m1v1_cart_y_pred_fp01)
+train_m1v1_cart_prec01 <- train_m1v1_cart_y_pred_tp01 / (train_m1v1_cart_y_pred_tp01 + train_m1v1_cart_y_pred_fp01)
+train_m1v1_cart_f101 <- (1 + 1^2) * ((train_m1v1_cart_prec01 * train_m1v1_cart_recall01) /
+                                         ((1^2 * train_m1v1_cart_prec01) + train_m1v1_cart_recall01))
+train_m1v1_cart_plr01 <- train_m1v1_cart_recall01 / (1 - train_m1v1_cart_tnr01)
+
+test_neg_count <- length(which(test_y01_df01$x == "NRB"))
+test_pos_count <- length(which(test_y01_df01$x == "RB"))
+test_total_count <- test_neg_count + test_pos_count
+test_max_count <- max(test_neg_count, test_pos_count)
+test_base_line_acc <- test_max_count / test_total_count
+test_base_line_acc
+
+train_neg_count <- length(which(train_y01_df01$x == "NRB"))
+train_pos_count <- length(which(train_y01_df01$x == "RB"))
+train_total_count <- train_neg_count + train_pos_count
+train_max_count <- max(train_neg_count, train_pos_count)
+train_base_line_acc <- train_max_count / train_total_count
+train_base_line_acc
+
+# ==============================================================================
+# Generate evaluation measures table
+measure_m1v1_cart_name <- c("M1: CART DT",
+                          "Baseline Accuracy",
+                          "Accuracy",
+                          "Error Rate",
+                          "Sensitivity/TPR/Recall",
+                          "Specificity/TNR",
+                          "Precision",
+                          "F1",
+                          "Positive Liklihood Ratio"
+                          )
+
+measure_m1v1_cart_val01 <- c("Traing Data set",
+                           paste0(round(train_base_line_acc * 100, 1), "%"),
+                           paste0(round(train_m1v1_cart_acc01 * 100, 1), "%"),
+                           paste0(round(train_m1v1_cart_err_rate01 * 100, 1), "%"),
+                           paste0(round(train_m1v1_cart_recall01 * 100, 1), "%"),
+                           paste0(round(train_m1v1_cart_tnr01 * 100, 1), "%"),
+                           paste0(round(train_m1v1_cart_prec01 * 100, 1), "%"),
+                           paste0(round(train_m1v1_cart_f101 * 100, 1), "%"),
+                           paste0(round(train_m1v1_cart_plr01 * 1, 2), "")
+                           )
+
+measure_m1v1_cart_val02 <- c("Test Data set",
+                           paste0(round(test_base_line_acc * 100, 1), "%"),
+                           paste0(round(test_m1v1_cart_acc01 * 100, 1), "%"),
+                           paste0(round(test_m1v1_cart_err_rate01 * 100, 1), "%"),
+                           paste0(round(test_m1v1_cart_recall01 * 100, 1), "%"),
+                           paste0(round(test_m1v1_cart_tnr01 * 100, 1), "%"),
+                           paste0(round(test_m1v1_cart_prec01 * 100, 1), "%"),
+                           paste0(round(test_m1v1_cart_f101 * 100, 1), "%"),
+                           paste0(round(test_m1v1_cart_plr01 * 1, 2), "")
+                           )
+
+measure_m1v1_cart_tbl <- data.frame(measure_m1v1_cart_name, measure_m1v1_cart_val01, measure_m1v1_cart_val02)
+print(measure_m1v1_cart_tbl)
+
+# Confirm confusion matrix results
+confusionMatrix(table(test_m1v1_cart_y_pred_df01, test_y01_df01$x), positive = "RB")
+
+print(paste0("Number of NRBs in Test Set Original Target = ", test_neg_count))
+print(paste0("Number of NRBs in Test Set Predicted = ", length(which(test_m1v1_cart_y_pred_df01 == "NRB"))))
+print(paste0("Number of RBs in Test Set Original Target = ", test_pos_count))
+print(paste0("Number of RBs in Test Set Predicted = ", length(which(test_m1v1_cart_y_pred_df01 == "RB"))))
+
+test_m1v1_cart_measure_df01 <- data.frame(test_y01_df01$x, test_m1v1_cart_y_pred_df01)
+
+print(paste0("Number of True RBs (TP) in Test Set = ",
+             length(which(test_m1v1_cart_measure_df01$test_y01_df01.x == "RB" &
+                            test_m1v1_cart_measure_df01$test_m1v1_cart_y_pred_df01 == "RB"))))
+print(paste0("Number of False NRBs (FN) in Test Set = ",
+             length(which(test_m1v1_cart_measure_df01$test_y01_df01.x == "RB" &
+                            test_m1v1_cart_measure_df01$test_m1v1_cart_y_pred_df01 == "NRB"))))
+print(paste0("Number of False RBs (FP) in Test Set = ",
+             length(which(test_m1v1_cart_measure_df01$test_y01_df01.x == "NRB" &
+                            test_m1v1_cart_measure_df01$test_m1v1_cart_y_pred_df01 == "RB"))))
+print(paste0("Number of True NRBs (TN) in Test Set = ",
+             length(which(test_m1v1_cart_measure_df01$test_y01_df01.x == "NRB" &
+                            test_m1v1_cart_measure_df01$test_m1v1_cart_y_pred_df01 == "NRB"))))
+```
