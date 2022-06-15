@@ -1,0 +1,58 @@
+---
+title: "Nearest Shrunken Centroid Model"
+output: html_document
+author: "Ivan A Chavez"
+---
+```{r}
+# Loading packages and setting seed
+library(caret)
+library(pROC)
+set.seed(100)
+```
+```{r}
+# Loading transformed data to perform modeling
+biodeg_train <- read.csv("../data/biodeg_train_trans.csv", header = TRUE, sep = ",")
+biodeg_test <- read.csv("../data/biodeg_test_trans.csv", header = TRUE, sep = ",")
+response_train <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
+response_test <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
+
+response_train <- as.factor(as.matrix(response_train))
+response_test <- as.factor(as.matrix(response_test))
+
+```
+```{r}
+
+ctrl <- trainControl(method = "cv",
+                     summaryFunction = twoClassSummary,
+                     classProbs = TRUE,
+                     savePredictions = TRUE)
+
+nscFit <- train(x = biodeg_train,
+                y = response_train,
+                method = "pam",
+                tuneGrid = data.frame(threshold = seq(0, 25, length = 30)),
+                metric = "ROC",
+                trControl = ctrl)
+#nscFit
+
+testResults <- data.frame(obs = response_test,
+                          NSC = predict(nscFit, biodeg_test))
+
+#confusionMatrix(testResults$NSC, testResults$obs, positive = "NRB")
+
+#nscCM <- confusionMatrix(nscFit, norm = "none")
+#nscCM
+
+## Plot the ROC curve for the hold-out set
+nscRoc <- roc(response = nscFit$pred$obs,
+              predictor = nscFit$pred$NRB,
+              levels = rev(levels(nscFit$pred$obs)))
+
+#plot(nscRoc, legacy.axes = TRUE)
+#nscRoc$auc
+```
+```{r}
+
+
+write.csv(ctrl,"../data/model_ctrl.csv")
+```
