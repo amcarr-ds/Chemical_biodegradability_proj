@@ -37,7 +37,7 @@ ggplot(biodeg, aes(experimental.class)) + geom_bar() + coord_flip()
 
 ```{r}
 
-index_biodeg <- createDataPartition(biodeg$experimental.class, p=.70, list = FALSE)
+index_biodeg <- createDataPartition(biodeg$experimental.class, p=.80, list = FALSE)
 biodeg_trainset <- biodeg[index_biodeg,]
 biodeg_testset <- biodeg[-index_biodeg,]
 
