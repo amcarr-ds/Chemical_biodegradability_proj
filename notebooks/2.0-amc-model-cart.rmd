@@ -14,7 +14,7 @@ header-includes:
 - \newcommand{\elandscape}{\end{landscape}}
 ---
 
-# Assignment 1.1
+## RMarkdown global setup
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -48,7 +48,7 @@ library(rpart.plot)
 library(scales)
 ```
 
-# Importing Train/Test Datasets
+## Importing Train/Test Datasets
 ```{r}
 train_x01_df01 <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
 test_x01_df01 <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")

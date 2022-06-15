@@ -14,6 +14,7 @@ header-includes:
 - \newcommand{\elandscape}{\end{landscape}}
 ---
 
+# RMarkdown global setup
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -62,7 +63,7 @@ test_y01_vc01 <- as.factor(test_y01_df01[["x"]])
 
 ## Setting up for models
 ```{r}
-set.seed(1699)
+set.seed(100)
 train_y01_vc01_2cl_ctl <- trainControl(method = "cv",
                                        summaryFunction = twoClassSummary,
                                        classProbs = TRUE,
@@ -72,10 +73,10 @@ train_y01_vc01_2cl_ctl <- trainControl(method = "cv",
 ## Models 5.1 and 5.2 (*M~5.1~* & *M~5.2~*): General Logistic Regression (GLR)
 ```{r, fig.height=5, fig.width=10, warning=FALSE}
 # Train & test LR model
-set.seed(1699)
+set.seed(100)
 m5v1_glr <- train(x = train_x01_df01, y = train_y01_vc01,
                   method = "glm",
-                  preProcess = c("nzv", "corr", "BoxCox", "center", "scale"),
+                  preProcess = c("nzv", "corr", "BoxCox", "center", "scale", "spatialSign"),
                   metric = "ROC",
                   trControl = train_y01_vc01_2cl_ctl)
 
@@ -83,10 +84,10 @@ test_pred_model_outcomes <- data.frame(obs = test_y01_vc01,
                                        M5.1.GLR = predict(m5v1_glr, test_x01_df01))
 
 # Train & test LR model using principal component analysis (PCA)
-set.seed(1699)
+set.seed(100)
 m5v2_glr <- train(x = train_x01_df01, y = train_y01_vc01,
                   method = "glm",
-                  preProcess = c("nzv", "corr", "BoxCox", "center", "scale", "pca"),
+                  preProcess = c("nzv", "corr", "BoxCox", "center", "scale", "spatialSign", "pca"),
                   metric = "ROC",
                   trControl = train_y01_vc01_2cl_ctl)
 
@@ -98,10 +99,10 @@ test_pred_model_outcomes$M5.2.GLR_PCA <- predict(m5v2_glr, test_x01_df01)
 # Lambda controls regularization; alpha regulates region: 1 = lasso, 0 = ridge, 0<a<1 = combo
 m6v1_plr_grd <- expand.grid(alpha = c(0, .1, .2, .4, .6, .8, 1),
                             lambda = seq(.01, .25, length = 20))
-set.seed(1699)
+set.seed(100)
 m6v1_plr <- train(x = train_x01_df01, y = train_y01_vc01,
                   method = "glmnet",
-                  preProcess = c("nzv", "BoxCox", "center", "scale"),
+                  preProcess = c("nzv", "BoxCox", "center", "scale", "spatialSign"),
                   metric = "ROC",
                   trControl = train_y01_vc01_2cl_ctl,
                   tuneGrid = m6v1_plr_grd)
@@ -115,14 +116,17 @@ m5v1_glr$results
 m5v1_glr_pred <- m5v1_glr$pred$obs
 m5v1_glr_roc <- roc(response = m5v1_glr_pred,
                     predictor = m5v1_glr$pred$RB,
-                    levels = rev(levels(m5v1_glr_pred)))
+                    levels = levels(m5v1_glr_pred))
 confusionMatrix(m5v1_glr, norm = "none")
 
 m5v2_glr$results
 m5v2_glr_pred <- m5v2_glr$pred$obs
 m5v2_glr_roc <- roc(response = m5v2_glr_pred,
                     predictor = m5v2_glr$pred$RB,
-                    levels = rev(levels(m5v2_glr_pred)))
+                    levels = levels(m5v2_glr_pred))
+levels(m5v2_glr_pred)
+rev(levels(m5v2_glr_pred))
+
 confusionMatrix(m5v2_glr, norm = "none")
 
 m6v1_plr$bestTune
@@ -132,7 +136,7 @@ plot(m6v1_plr)
 m6v1_plr_pred <- m6v1_plr$pred$obs
 m6v1_plr_roc <- roc(response = m6v1_plr_pred,
                     predictor = m6v1_plr$pred$RB,
-                    levels = rev(levels(m6v1_plr_pred)))
+                    levels = levels(m6v1_plr_pred))
 confusionMatrix(m6v1_plr, norm = "none")
 
 models_compare <- resamples(list(M5.1.GLR = m5v1_glr,
@@ -160,4 +164,3 @@ confusionMatrix(test_pred_model_outcomes$M5.1.GLR, test_pred_model_outcomes$obs,
 confusionMatrix(test_pred_model_outcomes$M5.2.GLR_PCA, test_pred_model_outcomes$obs, positive = "RB")
 confusionMatrix(test_pred_model_outcomes$M6.1.PLR, test_pred_model_outcomes$obs, positive = "RB")
 ```
-

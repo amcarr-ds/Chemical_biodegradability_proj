@@ -14,7 +14,7 @@ header-includes:
 - \newcommand{\elandscape}{\end{landscape}}
 ---
 
-# Assignment 1.1
+## RMarkdown global setup
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -47,7 +47,7 @@ library(rpart.plot)
 library(scales)
 ```
 
-# Importing Train/Test Datasets
+## Importing Train/Test Datasets
 ```{r}
 biodeg_train_x01_df01 <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
 biodeg_test_x01_df01 <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
@@ -60,7 +60,7 @@ biodeg_test_y01_vc01 <- biodeg_test_y01_df01[["x"]]
 ```
 
 ```{r, fig.height=8, fig.width=10}
-set.seed(1699)
+set.seed(100)
 biodeg_x01_df01_train_fit01 <- preProcess(biodeg_train_x01_df01,
                                           method = c("BoxCox", "center", "scale", "nzv", "spatialSign"))
 biodeg_x01_df01_train_fit01
@@ -79,4 +79,3 @@ head(biodeg_test_x01_trans_df01, 5)
 write.csv(biodeg_train_x01_trans_df01,"../data/biodeg_train_trans.csv", row.names = FALSE)
 write.csv(biodeg_test_x01_trans_df01,"../data/biodeg_test_trans.csv", row.names = FALSE)
 ```
-

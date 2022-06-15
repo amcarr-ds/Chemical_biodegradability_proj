@@ -14,7 +14,7 @@ header-includes:
 - \newcommand{\elandscape}{\end{landscape}}
 ---
 
-# Assignment 1.1
+## RMarkdown global setup
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -166,7 +166,7 @@ box_comp <- function(xcol = c(), df = NA) {
 }
 ```
 
-# Importing Train/Test Datasets
+## Importing Train/Test Datasets
 ```{r}
 biodeg_train_x01_df01 <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
 biodeg_test_x01_df01 <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
@@ -178,7 +178,7 @@ biodeg_train_y01_vc01 <- biodeg_train_y01_df01[["x"]]
 biodeg_test_y01_vc01 <- biodeg_test_y01_df01[["x"]]
 ```
 
-# Run function to create comparative boxplots
+## Run function to create comparative boxplots
 ```{r}
 biodeg_train_x01_df01_cols01 <- colnames(biodeg_train_x01_df01)
 biodeg_train_x01_df01_metrics <- box_comp(xcol = biodeg_train_x01_df01_cols01, df = biodeg_train_x01_df01)
@@ -207,4 +207,3 @@ biodeg_x01_df01_train_fit01 <- preProcess(biodeg_train_x01_df01,
 biodeg_train_x01_trans_df01 <- predict(biodeg_x01_df01_train_fit01, biodeg_train_x01_df01)
 sapply(biodeg_train_x01_trans_df01, function(x) sum(abs(x) > 3))
 ```
-
