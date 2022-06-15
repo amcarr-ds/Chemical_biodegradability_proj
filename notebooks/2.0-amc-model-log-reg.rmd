@@ -1,0 +1,163 @@
+---
+title: "ADS503-02-SP22 - Final Project: Team 3"
+author: "Carr_Aaron"
+date: "06/27/2022"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+header-includes:
+- \usepackage{fvextra}
+- \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r global.options, include=TRUE}
+knitr::opts_chunk$set(
+  fig.align = 'center'
+  )
+```
+
+```{r lib, message=FALSE}
+library(AppliedPredictiveModeling)
+library(BioStatR)
+library(car)
+library(caret)
+library(class)
+library(corrplot)
+library(datasets)
+library(dplyr)
+library(e1071)
+library(Hmisc)
+library(mlbench)
+library(ggplot2)
+library(gridExtra)
+library(pROC)
+library(psych)
+library(randomForest)
+library(RANN)
+library(ROCR)
+library(rpart)
+library(rpart.plot)
+library(scales)
+```
+
+## Importing Train/Test Datasets
+```{r}
+train_x01_df01 <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
+test_x01_df01 <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
+
+train_y01_df01 <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
+test_y01_df01 <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
+
+train_y01_vc01 <- as.factor(train_y01_df01[["x"]])
+test_y01_vc01 <- as.factor(test_y01_df01[["x"]])
+```
+
+## Setting up for models
+```{r}
+set.seed(1699)
+train_y01_vc01_2cl_ctl <- trainControl(method = "cv",
+                                       summaryFunction = twoClassSummary,
+                                       classProbs = TRUE,
+                                       savePredictions = TRUE)
+```
+
+## Models 5.1 and 5.2 (*M~5.1~* & *M~5.2~*): General Logistic Regression (GLR)
+```{r, fig.height=5, fig.width=10, warning=FALSE}
+# Train & test LR model
+set.seed(1699)
+m5v1_glr <- train(x = train_x01_df01, y = train_y01_vc01,
+                  method = "glm",
+                  preProcess = c("nzv", "corr", "BoxCox", "center", "scale"),
+                  metric = "ROC",
+                  trControl = train_y01_vc01_2cl_ctl)
+
+test_pred_model_outcomes <- data.frame(obs = test_y01_vc01,
+                                       M5.1.GLR = predict(m5v1_glr, test_x01_df01))
+
+# Train & test LR model using principal component analysis (PCA)
+set.seed(1699)
+m5v2_glr <- train(x = train_x01_df01, y = train_y01_vc01,
+                  method = "glm",
+                  preProcess = c("nzv", "corr", "BoxCox", "center", "scale", "pca"),
+                  metric = "ROC",
+                  trControl = train_y01_vc01_2cl_ctl)
+
+test_pred_model_outcomes$M5.2.GLR_PCA <- predict(m5v2_glr, test_x01_df01)
+```
+
+## Model 6.1 (*M~6.1~*): Penalized Logistic Regression (PLR)
+```{r, fig.height=5, fig.width=10}
+# Lambda controls regularization; alpha regulates region: 1 = lasso, 0 = ridge, 0<a<1 = combo
+m6v1_plr_grd <- expand.grid(alpha = c(0, .1, .2, .4, .6, .8, 1),
+                            lambda = seq(.01, .25, length = 20))
+set.seed(1699)
+m6v1_plr <- train(x = train_x01_df01, y = train_y01_vc01,
+                  method = "glmnet",
+                  preProcess = c("nzv", "BoxCox", "center", "scale"),
+                  metric = "ROC",
+                  trControl = train_y01_vc01_2cl_ctl,
+                  tuneGrid = m6v1_plr_grd)
+
+test_pred_model_outcomes$M6.1.PLR <- predict(m6v1_plr, test_x01_df01)
+```
+
+```{r, fig.height=7, fig.width=10}
+sig <- 3
+m5v1_glr$results
+m5v1_glr_pred <- m5v1_glr$pred$obs
+m5v1_glr_roc <- roc(response = m5v1_glr_pred,
+                    predictor = m5v1_glr$pred$RB,
+                    levels = rev(levels(m5v1_glr_pred)))
+confusionMatrix(m5v1_glr, norm = "none")
+
+m5v2_glr$results
+m5v2_glr_pred <- m5v2_glr$pred$obs
+m5v2_glr_roc <- roc(response = m5v2_glr_pred,
+                    predictor = m5v2_glr$pred$RB,
+                    levels = rev(levels(m5v2_glr_pred)))
+confusionMatrix(m5v2_glr, norm = "none")
+
+m6v1_plr$bestTune
+m6v1_plr
+mean(m6v1_plr$results$ROC)
+plot(m6v1_plr)
+m6v1_plr_pred <- m6v1_plr$pred$obs
+m6v1_plr_roc <- roc(response = m6v1_plr_pred,
+                    predictor = m6v1_plr$pred$RB,
+                    levels = rev(levels(m6v1_plr_pred)))
+confusionMatrix(m6v1_plr, norm = "none")
+
+models_compare <- resamples(list(M5.1.GLR = m5v1_glr,
+                                 M5.2.GLR_PCA = m5v2_glr,
+                                 M6.1.PLR = m6v1_plr))
+summary(models_compare)
+
+# Compare ROC curves
+plot(m5v1_glr_roc, col = 'blue', legacy.axes = TRUE)
+plot(m5v2_glr_roc, add = TRUE, col = 'orange', legacy.axes = TRUE)
+plot(m6v1_plr_roc, add = TRUE, col = 'black', legacy.axes = TRUE)
+legend("bottomright", legend=c("LR", "LR-PCA" , "PLR"),
+       col=c("blue", "orange", "black"), lwd = 2)
+title(main = "Compare ROC curves from different models", outer = TRUE, line = -1)
+
+print(paste0("Model 5.1: GLR AUC = ", round(m5v1_glr_roc$auc, sig)))
+print(paste0("Model 5.2: GLR-PCA AUC = ", round(m5v2_glr_roc$auc, sig)))
+print(paste0("Model 6.1: PLR AUC = ", round(m6v1_plr_roc$auc, sig)))
+
+m6v1_plr_vip <- varImp(m6v1_plr, scale = FALSE)
+m6v1_plr_vip
+plot(m6v1_plr_vip)
+
+confusionMatrix(test_pred_model_outcomes$M5.1.GLR, test_pred_model_outcomes$obs, positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M5.2.GLR_PCA, test_pred_model_outcomes$obs, positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M6.1.PLR, test_pred_model_outcomes$obs, positive = "RB")
+```
+
