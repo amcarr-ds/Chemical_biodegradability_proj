@@ -142,7 +142,8 @@ confusionMatrix(m6v1_plr, norm = "none")
 models_compare <- resamples(list(M5.1.GLR = m5v1_glr,
                                  M5.2.GLR_PCA = m5v2_glr,
                                  M6.1.PLR = m6v1_plr))
-summary(models_compare)
+models_compare_summ <- summary(models_compare)
+models_compare_summ
 
 # Compare ROC curves
 plot(m5v1_glr_roc, col = 'blue', legacy.axes = TRUE)
@@ -163,4 +164,9 @@ plot(m6v1_plr_vip)
 confusionMatrix(test_pred_model_outcomes$M5.1.GLR, test_pred_model_outcomes$obs, positive = "RB")
 confusionMatrix(test_pred_model_outcomes$M5.2.GLR_PCA, test_pred_model_outcomes$obs, positive = "RB")
 confusionMatrix(test_pred_model_outcomes$M6.1.PLR, test_pred_model_outcomes$obs, positive = "RB")
+```
+
+```{r}
+write.csv(test_pred_model_outcomes,"../data/05-06_biodeg_test_outcomes.csv", row.names = FALSE)
+write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),"../data/05-06_biodeg_test_resamp_results.csv", row.names = FALSE)
 ```
