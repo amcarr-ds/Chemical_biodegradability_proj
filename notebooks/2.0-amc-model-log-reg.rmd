@@ -64,7 +64,8 @@ test_y01_vc01 <- as.factor(test_y01_df01[["x"]])
 ## Setting up for models
 ```{r}
 set.seed(100)
-train_y01_vc01_2cl_ctl <- trainControl(method = "cv",
+train_y01_vc01_2cl_ctl <- trainControl(method = "repeatedcv",
+                                       repeats = 5,
                                        summaryFunction = twoClassSummary,
                                        classProbs = TRUE,
                                        savePredictions = TRUE)

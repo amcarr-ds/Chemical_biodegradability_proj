@@ -39,6 +39,8 @@ library(Hmisc)
 library(mlbench)
 library(ggplot2)
 library(gridExtra)
+library(partykit)
+library(pROC)
 library(psych)
 library(randomForest)
 library(RANN)
@@ -56,27 +58,116 @@ test_x01_df01 <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
 train_y01_df01 <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
 test_y01_df01 <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
 
-train_y01_vc01 <- train_y01_df01[["x"]]
-test_y01_vc01 <- test_y01_df01[["x"]]
+train_y01_vc01 <- as.factor(train_y01_df01[["x"]])
+test_y01_vc01 <- as.factor(test_y01_df01[["x"]])
 ```
 
-## Model 1 (*M~1~*): CART DT
+## Setting up for models
+```{r}
+set.seed(100)
+train_y01_vc01_2cl_ctl <- trainControl(method = "repeatedcv",
+                                       repeats = 5,
+                                       summaryFunction = twoClassSummary,
+                                       classProbs = TRUE,
+                                       savePredictions = TRUE)
+```
+
+## Model 1.1 (*M~1.1~*): CART DT Using `rpart()`
 ```{r, fig.height=8, fig.width=10}
 train_xy01_df01 <- data.frame(train_x01_df01, train_y01_df01)
 
 # Train model
-train_m1v1_cart <- rpart(x ~ ., data = train_xy01_df01, method = "class")
-rpart.plot(train_m1v1_cart, type = 4)
+set.seed(100)
+m1v1_cart <- rpart(x ~ ., data = train_xy01_df01, method = "class")
+rpart.plot(m1v1_cart, type = 4)
 
 # Use trained model to predict y on train data
-train_m1v1_cart_y_pred_df01 <- predict(object = train_m1v1_cart, newdata = train_x01_df01, type = "class")
+m1v1_cart_y_pred_df01 <- predict(object = m1v1_cart, newdata = train_x01_df01, type = "class")
 
 # Confirm confusion matrix results
-confusionMatrix(table(train_m1v1_cart_y_pred_df01, train_y01_df01$x), positive = "RB")
+confusionMatrix(table(m1v1_cart_y_pred_df01, train_y01_df01$x), positive = "RB")
 
 # Use trained model to predict y on test data
-test_m1v1_cart_y_pred_df01 <- predict(object = train_m1v1_cart, newdata = test_x01_df01, type = "class")
+test_m1v1_cart_y_pred_df01 <- predict(object = m1v1_cart, newdata = test_x01_df01, type = "class")
 
 # Confirm confusion matrix results
 confusionMatrix(table(test_m1v1_cart_y_pred_df01, test_y01_df01$x), positive = "RB")
+```
+
+## Model 1.2 (*M~1.2~*): CART DT Using `train()`
+```{r}
+set.seed(100)
+m1v2_cart <- train(x = train_x01_df01, y = train_y01_vc01,
+                   method = "rpart",
+                   tuneLength = 40,
+                   metric = "ROC",
+                   trControl = train_y01_vc01_2cl_ctl
+                   )
+test_pred_model_outcomes <- data.frame(obs = test_y01_vc01,
+                                       M1.2.CART = predict(m1v2_cart, test_x01_df01))
+```
+
+## Model 1.3 (*M~1.3~*): C5.0 Using `train()`
+```{r}
+set.seed(100)
+m1v3_c50 <- train(x = train_x01_df01, y = train_y01_vc01,
+                   method = "C5.0Tree",
+                   tuneLength = 40,
+                   metric = "ROC",
+                   trControl = train_y01_vc01_2cl_ctl
+                   )
+test_pred_model_outcomes$M1.3.C5.0 = predict(m1v3_c50, test_x01_df01)
+```
+
+```{r}
+sig <- 3
+m1v2_cart$results
+m1v2_cart_pred <- m1v2_cart$pred$obs
+m1v2_cart_roc <- roc(response = m1v2_cart_pred,
+                     predictor = m1v2_cart$pred$RB,
+                     levels = levels(m1v2_cart_pred))
+confusionMatrix(m1v2_cart, norm = "none")
+
+m1v3_c50$results
+m1v3_c50_pred <- m1v3_c50$pred$obs
+m1v3_c50_roc <- roc(response = m1v3_c50_pred,
+                    predictor = m1v3_c50$pred$RB,
+                    levels = levels(m1v3_c50_pred))
+confusionMatrix(m1v3_c50, norm = "none")
+
+models_compare <- resamples(list(M1.2.CART = m1v2_cart,
+                                 M1.3.C5.0 = m1v3_c50))
+models_compare_summ <- summary(models_compare)
+models_compare_summ
+
+twoClassSummary(m1v2_cart$pred, lev = c("NRB", "RB"))
+
+# Compare ROC curves
+plot(m1v2_cart_roc, col = 'blue', legacy.axes = TRUE)
+plot(m1v3_c50_roc, add = TRUE, col = 'black', legacy.axes = TRUE)
+legend("bottomright", legend=c("CART", "C5.0"),
+       col=c("blue", "black"), lwd = 2)
+title(main = "Compare ROC curves from different models", outer = TRUE, line = -1)
+
+print(paste0("Model 1.2: CART AUC = ", round(m1v2_cart_roc$auc, sig)))
+print(paste0("Model 1.3: C5.0 AUC = ", round(m1v3_c50_roc$auc, sig)))
+
+m1v2_cart_vip <- varImp(m1v2_cart, scale = FALSE)
+m1v2_cart_vip
+plot(m1v2_cart_vip)
+
+m1v3_c50_vip <- varImp(m1v3_c50, scale = FALSE)
+m1v3_c50_vip
+plot(m1v3_c50_vip)
+
+confusionMatrix(test_pred_model_outcomes$M1.2.CART, test_pred_model_outcomes$obs, positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M1.3.C5.0, test_pred_model_outcomes$obs, positive = "RB")
+plot(m1v2_cart)
+plot(m1v3_c50)
+#plot(as.party(m1v2_cart))
+```
+
+```{r}
+write.csv(test_pred_model_outcomes,"../data/01_biodeg_test_outcomes.csv", row.names = FALSE)
+write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),"../data/01_biodeg_test_resamp_results.csv", row.names = FALSE)
 ```
