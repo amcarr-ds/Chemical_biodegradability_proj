@@ -1,14 +1,17 @@
 ---
-title: "Nearest Shrunken Centroid Model"
+title: "Partial Least Squares Discriminate Analysis"
 output: html_document
 author: "Ivan A Chavez"
 ---
+
 ```{r}
 # Loading packages and setting seed
 library(caret)
 library(pROC)
 set.seed(100)
 ```
+
+
 ```{r}
 # Loading transformed data to perform modeling
 biodeg_train <- read.csv("../data/biodeg_train_trans.csv", header = TRUE, sep = ",")
@@ -24,36 +27,25 @@ y_pred_test <- read.csv("../data/test-results/y_pred.csv", header = TRUE, sep = 
 y_pred_test <- lapply(y_pred_test, function(x) (as.factor(x)))
 
 ```
-```{r}
 
+```{r}
 ctrl <- trainControl(method = "repeatedcv",
                      repeats = 5,
                      summaryFunction = twoClassSummary,
                      classProbs = TRUE,
                      savePredictions = TRUE)
 
-nscFit <- train(x = biodeg_train,
+plsdaFit <- train(x = biodeg_train,
                 y = response_train,
-                method = "pam",
-                tuneGrid = data.frame(threshold = seq(0, 25, length = 30)),
+                method = "pls",
+                tuneGrid = expand.grid(ncomp = 1:10),
                 metric = "ROC",
                 trControl = ctrl)
-#nscFit
+plsdaFit
 
-y_pred_test$nsc <- predict(nscFit, biodeg_test)
+y_pred_test$plsda <- predict(plsdaFit, biodeg_test)
 
-confusionMatrix(y_pred_test$nsc, y_pred_test$obs, positive = "RB")
-
-#nscCM <- confusionMatrix(nscFit, norm = "none")
-#nscCM
-
-## Plot the ROC curve for the hold-out set
-nscRoc <- roc(response = nscFit$pred$obs,
-              predictor = nscFit$pred$RB,
-              levels = rev(levels(nscFit$pred$obs)))
-
-plot(nscRoc, legacy.axes = TRUE)
-#nscRoc$auc
+confusionMatrix(y_pred_test$PLSDA, y_pred_test$obs, positive = "RB")
 ```
 
 ```{r}
@@ -62,7 +54,6 @@ write.csv(y_pred_test,"../data/test-results/y_pred.csv", row.names = FALSE)
 ```
 
 ```{r}
-
 biodeg_train <- read.csv("../data/biodeg_train_trans_features.csv", header = TRUE, sep = ",")
 biodeg_test <- read.csv("../data/biodeg_test_trans_features.csv", header = TRUE, sep = ",")
 ```
@@ -73,28 +64,16 @@ ctrl <- trainControl(method = "repeatedcv",
                      classProbs = TRUE,
                      savePredictions = TRUE)
 
-nscFit <- train(x = biodeg_train,
-                y = response_train,
-                method = "pam",
-                tuneGrid = data.frame(threshold = seq(0, 25, length = 30)),
-                metric = "ROC",
-                trControl = ctrl)
-nscFit
+plsdaFit <- train(x = biodeg_train,
+                  y = response_train,
+                  method = "pls",
+                  tuneGrid = expand.grid(ncomp = 1:10),
+                  metric = "ROC",
+                  trControl = ctrl)
+plsdaFit
 
 testResults <- data.frame(obs = response_test,
-                          NSC = predict(nscFit, biodeg_test))
+                          PLSDA = predict(plsdaFit, biodeg_test))
 
-confusionMatrix(testResults$NSC, testResults$obs, positive = "RB")
-
-#nscCM <- confusionMatrix(nscFit, norm = "none")
-#nscCM
-
-## Plot the ROC curve for the hold-out set
-nscRoc <- roc(response = nscFit$pred$obs,
-              predictor = nscFit$pred$RB,
-              levels = rev(levels(nscFit$pred$obs)))
-
-plot(nscRoc, legacy.axes = TRUE)
-#nscRoc$auc
+confusionMatrix(testResults$PLSDA, testResults$obs, positive = "RB")
 ```
-

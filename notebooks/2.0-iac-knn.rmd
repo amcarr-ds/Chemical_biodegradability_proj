@@ -19,10 +19,15 @@ response_test <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
 response_train <- as.factor(as.matrix(response_train))
 response_test <- as.factor(as.matrix(response_test))
 
+# Pulling test outcome data to add results and transforming each coulmn to a factor
+y_pred_test <- read.csv("../data/test-results/y_pred.csv", header = TRUE, sep = ",")
+y_pred_test <- lapply(y_pred_test, function(x) (as.factor(x)))
+
 ```
 ```{r}
 
-ctrl <- trainControl(method = "cv",
+ctrl <- trainControl(method = "repeatedcv",
+                     repeats = 5,
                      summaryFunction = twoClassSummary,
                      classProbs = TRUE,
                      savePredictions = TRUE)
@@ -35,17 +40,17 @@ knnFit <- train(x = biodeg_train, y = response_train,
 
 knnFit
 
-testResults <- data.frame(obs = response_test,
-                          NSC = predict(knnFit, biodeg_test))
+y_pred_test$knn <- predict(knnFit, biodeg_test)
 
-confusionMatrix(testResults$NSC, testResults$obs, positive = "NRB")
+# ER: 0.15 Sn: 0.81  Sp: 0.90
+confusionMatrix(y_pred_test$knn, y_pred_test$obs, positive = "RB")
 
 #nscCM <- confusionMatrix(nscFit, norm = "none")
 #nscCM
 
 ## Plot the ROC curve for the hold-out set
 knnRoc <- roc(response = knnFit$pred$obs,
-              predictor = knnFit$pred$NRB,
+              predictor = knnFit$pred$RB,
               levels = rev(levels(knnFit$pred$obs)))
 
 plot(knnRoc, legacy.axes = TRUE)
@@ -53,6 +58,42 @@ plot(knnRoc, legacy.axes = TRUE)
 ```
 ```{r}
 
+biodeg_train <- read.csv("../data/biodeg_train_trans_features.csv", header = TRUE, sep = ",")
+biodeg_test <- read.csv("../data/biodeg_test_trans_features.csv", header = TRUE, sep = ",")
+```
+```{r}
+ctrl <- trainControl(method = "repeatedcv",
+                     repeats = 5,
+                     summaryFunction = twoClassSummary,
+                     classProbs = TRUE,
+                     savePredictions = TRUE)
 
-write.csv(ctrl,"../data/model_ctrl.csv")
+knnFit <- train(x = biodeg_train, y = response_train,
+                method = "knn",
+                tuneGrid = data.frame(k = 1:20),
+                metric = "ROC",
+                trControl = ctrl)
+
+knnFit
+
+testResults <- data.frame(obs = response_test,
+                          NSC = predict(knnFit, biodeg_test))
+
+# ER: 0.15 Sn: 0.81  Sp: 0.90
+confusionMatrix(testResults$NSC, testResults$obs, positive = "RB")
+
+#nscCM <- confusionMatrix(nscFit, norm = "none")
+#nscCM
+
+## Plot the ROC curve for the hold-out set
+knnRoc <- roc(response = knnFit$pred$obs,
+              predictor = knnFit$pred$RB,
+              levels = rev(levels(knnFit$pred$obs)))
+
+plot(knnRoc, legacy.axes = TRUE)
+#nscRoc$auc
+```
+```{r}
+
+write.csv(y_pred_test,"../data/test-results/y_pred.csv", row.names = FALSE)
 ```
