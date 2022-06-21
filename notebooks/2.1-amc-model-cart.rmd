@@ -79,7 +79,7 @@ train_xy01_df01 <- data.frame(train_x01_df01, train_y01_df01)
 # Train model
 set.seed(100)
 m1v1_cart <- rpart(x ~ ., data = train_xy01_df01, method = "class")
-rpart.plot(m1v1_cart, type = 4)
+rpart.plot(m1v1_cart, type = 5, extra = 104)
 
 # Use trained model to predict y on train data
 m1v1_cart_y_pred_df01 <- predict(object = m1v1_cart, newdata = train_x01_df01, type = "class")
@@ -119,7 +119,7 @@ m1v3_c50 <- train(x = train_x01_df01, y = train_y01_vc01,
 test_pred_model_outcomes$M1.3.C5.0 = predict(m1v3_c50, test_x01_df01)
 ```
 
-```{r}
+```{r, fig.height=8, fig.width=10}
 sig <- 3
 m1v2_cart$results
 m1v2_cart_pred <- m1v2_cart$pred$obs
@@ -163,11 +163,19 @@ plot(m1v3_c50_vip)
 confusionMatrix(test_pred_model_outcomes$M1.2.CART, test_pred_model_outcomes$obs, positive = "RB")
 confusionMatrix(test_pred_model_outcomes$M1.3.C5.0, test_pred_model_outcomes$obs, positive = "RB")
 plot(m1v2_cart)
-plot(m1v3_c50)
-#plot(as.party(m1v2_cart))
+```
+
+```{r, fig.height=8, fig.width=10}
+# Citation: 
+# https://stackoverflow.com/questions/39636186/plot-decision-tree-in-r-caret
+rpart.plot(m1v2_cart$finalModel, type = 5, extra = 104)
+#m1v3_c50_tree <- as.party(m1v3_c50$pred)
+#plot.party(as.party(m1v3_c50[["pred"]]))
 ```
 
 ```{r}
-write.csv(test_pred_model_outcomes,"../data/01_biodeg_test_outcomes.csv", row.names = FALSE)
-write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),"../data/01_biodeg_test_resamp_results.csv", row.names = FALSE)
+write.csv(test_pred_model_outcomes,
+          "../data/01_biodeg_test_outcomes.csv", row.names = FALSE)
+write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),
+          "../data/01_biodeg_test_resamp_results.csv", row.names = FALSE)
 ```
