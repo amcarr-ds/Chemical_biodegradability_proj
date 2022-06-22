@@ -1,0 +1,348 @@
+---
+title: "ADS503-02-SP22 - Final Project: Team 3"
+author: "Carr_Aaron"
+date: "06/27/2022"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+header-includes:
+- \usepackage{fvextra}
+- \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+---
+
+## RMarkdown global setup
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r global.options, include=TRUE}
+knitr::opts_chunk$set(
+  fig.align = 'center'
+  )
+```
+
+```{r lib, message=FALSE}
+library(AppliedPredictiveModeling)
+library(BioStatR)
+library(car)
+library(caret)
+library(class)
+library(corrplot)
+library(datasets)
+library(dplyr)
+library(e1071)
+library(Hmisc)
+library(mlbench)
+library(ggplot2)
+library(gridExtra)
+library(psych)
+library(randomForest)
+library(RANN)
+library(rpart)
+library(rpart.plot)
+library(scales)
+```
+
+## Create function to generate boxplots for continuous variables
+```{r, fig.height=10, fig.width=10}
+# Define function to produce formatted boxplots
+box_comp <- function(xcol = c(), df = NA) {
+  sig <- 3
+  metrics_df01 <- data.frame(metric = c("",
+                                        "Total N:",
+                                        "Count",
+                                        "NA Count",
+                                        "Mean",
+                                        "Median",
+                                        "Mode",
+                                        "Standard Deviation",
+                                        "Variance",
+                                        "Range",
+                                        "Min",
+                                        "Max",
+                                        "IQR Outlier Limit",
+                                        "25th Percentile",
+                                        "75th Percentile",
+                                        "Lower Outlier Threshold",
+                                        "Upper Outlier Threshold",
+                                        "Subset w/o Outliers:",
+                                        "Count",
+                                        "%",
+                                        "Outlier %",
+                                        "NA Count",
+                                        "Mean",
+                                        "Median",
+                                        "Mode",
+                                        "Standard Deviation",
+                                        "Variance",
+                                        "Range",
+                                        "Min",
+                                        "Max"
+                                        ))
+  for (var in xcol) {
+    df_s1 <- df[, var]
+    df_s1s1 <-data.frame(df_s1)
+    df_s1_fit <- preProcess(df_s1s1,
+                            method = c("center", "scale"))
+    df_s1_trans <- predict(df_s1_fit, df_s1s1)
+    
+
+    # Calculate quartiles
+    var_iqr_lim <- IQR(df_s1) * 1.5
+    var_q1 <- quantile(df_s1, probs = c(.25))
+    var_otlow <- var_q1 - var_iqr_lim
+    var_q3 <- quantile(df_s1, probs = c(.75))
+    var_othigh <- var_q3 + var_iqr_lim
+    
+    # Subset non-outlier data 
+    var_non_otlr_df01 <- subset(df, (abs(df_s1_trans) < 3))
+    #var_non_otlr_df01 <- subset(df, (df_s1 > var_otlow & df_s1 < var_othigh))
+    df_s2 <- var_non_otlr_df01[, var]
+
+    # Begin calculating measures of centrality & dispersion
+    var_mean <- mean(df_s1)
+    var_non_otlr_df01_trunc_mean <- mean(df_s2)
+    var_med <- median(df_s1)
+    var_non_otlr_df01_trunc_med <- median(df_s2)
+    var_mode <- mode(df_s1)
+    var_non_otlr_df01_trunc_mode <- mode(df_s2)
+    var_stde <- sd(df_s1)
+    var_non_otlr_df01_trunc_stde <- sd(df_s2)
+    var_vari <- var(df_s1)
+    var_non_otlr_df01_trunc_vari <- var(df_s2)
+    var01_min <- min(df[, var])
+    var01_max <- max(df[, var])
+    var01_range <- var01_max - var01_min
+    var02_min <- min(var_non_otlr_df01[, var])
+    var02_max <- max(var_non_otlr_df01[, var])
+    var02_range <- var02_max - var02_min
+    
+    # Configure y-axis min & max to sync graphs
+    plot_min <- min(var01_min, var02_min)
+    plot_max <- max(var01_max, var02_max)
+    nonoutlier_perc <- round((as.numeric(dim(var_non_otlr_df01)[1] / as.numeric(dim(df)[1]))) * 100, 1)
+    measure_val01 <- c(paste0("Variable: ", var),
+                       "",
+                       as.character(dim(df)[1]),
+                       sum(is.na(df_s1)),
+                       round(var_mean, sig),
+                       round(var_med, sig),
+                       var_mode,
+                       round(var_stde, sig),
+                       round(var_vari, sig),
+                       round(var01_range, sig),
+                       round(var01_min, sig),
+                       round(var01_max, sig),
+                       paste0("+/-", round(var_iqr_lim, sig)),
+                       round(var_q1, sig),
+                       round(var_q3, sig),
+                       round(var_otlow, sig),
+                       round(var_othigh, sig),
+                       "",
+                       as.character(dim(var_non_otlr_df01)[1]),
+                       paste0(nonoutlier_perc, "%"),
+                       paste0(100 - nonoutlier_perc, "%"),
+                       sum(is.na(df_s2)),
+                       round(var_non_otlr_df01_trunc_mean, sig),
+                       round(var_non_otlr_df01_trunc_med, sig),
+                       var_non_otlr_df01_trunc_mode,
+                       round(var_non_otlr_df01_trunc_stde, sig),
+                       round(var_non_otlr_df01_trunc_vari, sig),
+                       round(var02_range, sig),
+                       round(var02_min, sig),
+                       round(var02_max, sig)
+                       )
+    
+    var_name <- paste0("Variable: ", var)
+    metrics_df01[, ncol(metrics_df01) + 1] <- measure_val01
+}
+  print(metrics_df01)
+  boxplot(df)
+  return(metrics_df01)
+}
+```
+
+## Importing Train/Test Datasets
+```{r}
+train_x01_df01 <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
+test_x01_df01 <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
+
+train_y01_df01 <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
+test_y01_df01 <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
+
+train_y01_vc01 <- train_y01_df01[["x"]]
+test_y01_vc01 <- test_y01_df01[["x"]]
+```
+
+## Run function to create comparative boxplots
+```{r}
+x01_lst01 <- c("SpMax_L",
+               "J_Dz.e.",
+               "nHM",
+               "F01.N.N.",
+               "F04.C.N.",
+               "NssssC",
+               "nCb.",
+               "C.",
+               "nCp",
+               "nO",
+               "F03.C.N.",
+               "SdssC",
+               "HyWi_B.m.",
+               "LOC",
+               "SM6_L",
+               "F03.C.O.",
+               "Me",
+               "Mi",
+               "nN.N",
+               "nArNO2",
+               "nCRX3",
+               "SpPosA_B.p.",
+               "nCIR",
+               "B01.C.Br.",
+               "B03.C.Cl.",
+               "N.073",
+               "SpMax_A",
+               "Psi_i_1d",
+               "B04.C.Br.",
+               "SdO",
+               "TI2_L",
+               "nCrt",
+               "C.026",
+               "F02.C.N.",
+               "nHDon",
+               "SpMax_B.m.",
+               "Psi_i_A",
+               "nN",
+               "SM6_B.m.",
+               "nArCOOR",
+               "nX")
+
+x01_lst02 <- c("SpMax_L",
+               "J_Dz.e.",
+               "HyWi_B.m.",
+               "LOC",
+               "SpMax_A",
+               "SpMax_B.m.",
+               "Psi_i_A",
+               "nN")
+
+x01_lst03 <- c("C.")
+
+x01_lst04 <- c("SdO")
+
+x01_lst05 <- c("nCIR")
+
+x01_lst06 <- c("F01.N.N.",
+               "nN.N",
+               "nArNO2",
+               "nCRX3",
+               "B01.C.Br.",
+               "B03.C.Cl.",
+               "N.073",
+               "B04.C.Br.",
+               "nArCOOR")
+
+x01_lst07 <- c("F04.C.N.",
+               "F03.C.N.",
+               "F03.C.O.")
+
+x01_lst08 <- c("SdssC")
+
+x01_lst09 <- c("Me",
+               "Mi",
+               "SpPosA_B.p.")
+
+x01_lst10 <- c("SM6_L",
+               "SM6_B.m.")
+
+x01_lst11 <- c("nCb.",
+               "nCp",
+               "nO",
+               "C.026",
+               "F02.C.N.",
+               "nHDon")
+
+x01_lst12 <- c("TI2_L")
+
+x01_lst13 <- c("nHM",
+               "NssssC",
+               "nCrt")
+
+x01_lst14 <- c("nX")
+
+x01_lst15 <- c("Psi_i_1d")
+
+train_x01_df01_cols01 <- colnames(train_x01_df01)
+train_x01_df01_metrics <- box_comp(xcol = train_x01_df01_cols01, df = train_x01_df01)
+write.csv(train_x01_df01_metrics,"../outputs/demos.csv", row.names = FALSE)
+
+train_x01_df02 <- subset(x = train_x01_df01, select = x01_lst02)
+box_comp(xcol = x01_lst02, df = train_x01_df02)
+
+train_x01_df03 <- subset(x = train_x01_df01, select = x01_lst03)
+box_comp(xcol = x01_lst03, df = train_x01_df03)
+
+train_x01_df04 <- subset(x = train_x01_df01, select = x01_lst04)
+box_comp(xcol = x01_lst04, df = train_x01_df04)
+
+train_x01_df05 <- subset(x = train_x01_df01, select = x01_lst05)
+box_comp(xcol = x01_lst05, df = train_x01_df05)
+
+train_x01_df06 <- subset(x = train_x01_df01, select = x01_lst06)
+box_comp(xcol = x01_lst06, df = train_x01_df06)
+
+train_x01_df07 <- subset(x = train_x01_df01, select = x01_lst07)
+box_comp(xcol = x01_lst07, df = train_x01_df07)
+
+train_x01_df08 <- subset(x = train_x01_df01, select = x01_lst08)
+box_comp(xcol = x01_lst08, df = train_x01_df08)
+
+train_x01_df09 <- subset(x = train_x01_df01, select = x01_lst09)
+box_comp(xcol = x01_lst09, df = train_x01_df09)
+
+train_x01_df10 <- subset(x = train_x01_df01, select = x01_lst10)
+box_comp(xcol = x01_lst10, df = train_x01_df10)
+
+train_x01_df11 <- subset(x = train_x01_df01, select = x01_lst11)
+box_comp(xcol = x01_lst11, df = train_x01_df11)
+
+train_x01_df12 <- subset(x = train_x01_df01, select = x01_lst12)
+box_comp(xcol = x01_lst12, df = train_x01_df12)
+
+train_x01_df13 <- subset(x = train_x01_df01, select = x01_lst13)
+box_comp(xcol = x01_lst13, df = train_x01_df13)
+
+train_x01_df14 <- subset(x = train_x01_df01, select = x01_lst14)
+box_comp(xcol = x01_lst14, df = train_x01_df14)
+
+train_x01_df15 <- subset(x = train_x01_df01, select = x01_lst15)
+box_comp(xcol = x01_lst15, df = train_x01_df15)
+
+```
+```{r}
+train_x01_df01_tbl01 <- table(train_x01_df01$B01.C.Br.)
+train_x01_df01_tbl02 <- rbind(train_x01_df01_tbl01, round(prop.table(train_x01_df01_tbl01), 3))
+train_x01_df01_tbl02
+
+train_x01_df01_tbl03 <- table(train_x01_df01$B03.C.Cl.)
+train_x01_df01_tbl04 <- rbind(train_x01_df01_tbl03, round(prop.table(train_x01_df01_tbl03), 3))
+train_x01_df01_tbl04
+
+train_x01_df01_tbl05 <- table(train_x01_df01$B04.C.Br.)
+train_x01_df01_tbl06 <- rbind(train_x01_df01_tbl05, round(prop.table(train_x01_df01_tbl05), 3))
+train_x01_df01_tbl06
+```
+
+
+```{r}
+x01_df01_train_fit01 <- preProcess(train_x01_df01,
+                                   method = c("center", "scale"))
+
+train_x01_trans_df01 <- predict(x01_df01_train_fit01, train_x01_df01)
+sapply(train_x01_trans_df01, function(x) sum(abs(x) > 3))
+```

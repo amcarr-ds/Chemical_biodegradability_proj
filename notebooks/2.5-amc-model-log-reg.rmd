@@ -59,6 +59,8 @@ test_y01_df01 <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
 
 train_y01_vc01 <- as.factor(train_y01_df01[["x"]])
 test_y01_vc01 <- as.factor(test_y01_df01[["x"]])
+
+test_pred_model_outcomes <- read.csv("../data/test-results/y_pred.csv", header = TRUE, sep = ",")
 ```
 
 ## Setting up for models
@@ -81,8 +83,7 @@ m5v1_glr <- train(x = train_x01_df01, y = train_y01_vc01,
                   metric = "ROC",
                   trControl = train_y01_vc01_2cl_ctl)
 
-test_pred_model_outcomes <- data.frame(obs = test_y01_vc01,
-                                       M5.1.GLR = predict(m5v1_glr, test_x01_df01))
+test_pred_model_outcomes$M5.1.GLR <- predict(m5v1_glr, test_x01_df01)
 
 # Train & test LR model using principal component analysis (PCA)
 set.seed(100)
@@ -162,12 +163,14 @@ m6v1_plr_vip <- varImp(m6v1_plr, scale = FALSE)
 m6v1_plr_vip
 plot(m6v1_plr_vip)
 
-confusionMatrix(test_pred_model_outcomes$M5.1.GLR, test_pred_model_outcomes$obs, positive = "RB")
-confusionMatrix(test_pred_model_outcomes$M5.2.GLR_PCA, test_pred_model_outcomes$obs, positive = "RB")
-confusionMatrix(test_pred_model_outcomes$M6.1.PLR, test_pred_model_outcomes$obs, positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M5.1.GLR, as.factor(test_pred_model_outcomes$obs), positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M5.2.GLR_PCA, as.factor(test_pred_model_outcomes$obs), positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M6.1.PLR, as.factor(test_pred_model_outcomes$obs), positive = "RB")
 ```
 
 ```{r}
-write.csv(test_pred_model_outcomes,"../data/05-06_biodeg_test_outcomes.csv", row.names = FALSE)
-write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),"../data/05-06_biodeg_test_resamp_results.csv", row.names = FALSE)
+write.csv(test_pred_model_outcomes,
+          "../data/test-results/05-06_y_pred.csv", row.names = FALSE)
+write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),
+          "../data/05-06_biodeg_test_resamp_results.csv", row.names = FALSE)
 ```
