@@ -17,6 +17,9 @@ names <- c("SpMax_L", "J_Dz(e)", "nHM", "F01[N-N]", "F04[C-N]", "NssssC", "nCb-"
 
 biodeg <- read.csv("../data/biodeg.csv", header = FALSE, sep = ";", col.names = names)
 
+#dropping extereme nCIR outlier row 1054
+biodeg <- biodeg[-1054,]
+
 ```
 # Plotting original frequency distributions of predictor variables
 ```{r}
