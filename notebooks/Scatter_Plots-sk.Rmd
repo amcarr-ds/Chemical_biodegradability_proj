@@ -1,24 +1,24 @@
 ---
-title: "Correlation and plots_SK"
+title: "1.0-sk-scatterplots"
 author: "Sreeja K"
 date: "`r Sys.Date()`"
-output: word_document
+output: html_document
 ---
 
 ```{r}
-# Loading packages and setting seed
-install.packages("corrplot")
 library(caret)
 library(tidyverse)
-library(corrplot)
+library(ggplot2)
+library(GGally)
 set.seed(100)
 ```
 
-# Importing and assigning column names
+
+
 ```{r}
 names <- c("SpMax_L", "J_Dz(e)", "nHM", "F01[N-N]", "F04[C-N]", "NssssC", "nCb-", "C%", "nCp", "nO", "F03[C-N]", "SdssC", "HyWi_B(m)", "LOC", "SM6_L", "F03[C-O]", "Me", "Mi", "nN-N", "nArNO2", "nCRX3", "SpPosA_B(p)", "nCIR", "B01[C-Br]", "B03[C-Cl]", "N-073", "SpMax_A", "Psi_i_1d", "B04[C-Br]", "SdO", "TI2_L", "nCrt", "C-026", "F02[C-N]", "nHDon", "SpMax_B(m)", "Psi_i_A", "nN", "SM6_B(m)", "nArCOOR", "nX", "experimental class")
 
-biodeg <- read.csv("../data/biodeg.csv", header = FALSE, sep = ";", col.names = names)
+biodeg <- read.csv("C:/Users/kurap/OneDrive/Documents/GitHub/predictive-modeling/data/biodeg.csv", header = FALSE, sep = ";", col.names = names)
 
 ```
 
@@ -33,43 +33,40 @@ response_test <- biodeg_testset[,42]
 
 biodeg_train <- biodeg_trainset[,-42]
 biodeg_test <- biodeg_testset[,-42]
-
-```
-
-#Correlation Matrices & plot
-
-```{r}
-#str(biodeg_train)
-biodeg_trainset[3:42] <- lapply(biodeg_trainset[3:42], as.numeric)
-biodeg_train[2:41] <- lapply(biodeg_train[2:41], as.numeric)
-
-
-
-x = biodeg_trainset[1:42]
-y = biodeg_train[1:41]
-Correlation_tr=cor(x, y)
-
-View(Correlation_tr)
-
-#assuming nX is the dependent variable
-x1 = biodeg_trainset[1:42]
-y1 = biodeg_train[41]
-Correlation_tr1=cor(x1, y1)
-
-View(Correlation_tr1)
 ```
 
 ```{r}
-Correlation_Mx = rcorr(as.matrix(biodeg_trainset))
-Correlation_Mx
+ggplot(biodeg_trainset, aes(x = SpMax_L, y = nX)) + geom_point()
 ```
 
 ```{r}
-mCoeff = Correlation_Mx$r
-mP_val = Correlation_Mx$P
+#Scatterplot matrix
+'par("mar")
+par(mar=c(1,1,1,1))'
+
+pairs(biodeg_trainset[1:6])
 ```
 
 ```{r}
-corrplot(Correlation_tr)
+pairs(biodeg_trainset[7:12])
 ```
 
+```{r}
+pairs(biodeg_trainset[13:20])
+```
+
+```{r}
+pairs(biodeg_trainset[21:27])
+```
+
+```{r}
+pairs(biodeg_trainset[28:33])
+```
+
+```{r}
+pairs(biodeg_trainset[34:37])
+```
+
+```{r}
+pairs(biodeg_trainset[38:41])
+```
