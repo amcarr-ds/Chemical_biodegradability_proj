@@ -21,10 +21,10 @@ biodeg <- read.csv("../data/biodeg.csv", header = FALSE, sep = ";", col.names = 
 # Plotting original frequency distributions of predictor variables
 ```{r}
 biodeg_hist <- biodeg[,-42]
-par(mfrow = c(6,7), mar=c(1,1,1,1))
+par(mfrow = c(7,6), mar=c(2,2,2,2))
 
 for(i in names(biodeg_hist)){
-  hist(biodeg_hist[[i]] ,main="Histogram",xlab="x",label=TRUE,plot = TRUE)
+  hist(biodeg_hist[[i]] ,main=i,xlab="x",label=TRUE,plot = TRUE)
 }
 
 ```
@@ -53,10 +53,10 @@ biodeg_test <- biodeg_testset[,-42]
 
 ```{r}
 
-par(mfrow = c(6,7), mar=c(1,1,1,1))
+par(mfrow = c(7,6), mar=c(2,2,2,2))
 
 for(i in names(biodeg_train)){
-  hist(biodeg_train[[i]] ,main="Histogram",xlab="x",label=TRUE, plot = TRUE)
+  hist(biodeg_train[[i]] ,main=i,xlab="x",label=TRUE, plot = TRUE)
 }
 
 ```
@@ -69,10 +69,10 @@ ggplot(biodeg_trainset, aes(experimental.class)) + geom_bar() + coord_flip()
 
 ```{r}
 
-par(mfrow = c(6,7), mar=c(1,1,1,1))
+par(mfrow = c(7,6), mar=c(2,2,2,2))
 
 for(i in names(biodeg_test)){
-  hist(biodeg_test[[i]] ,main="Histogram",xlab="x",label=TRUE, plot = TRUE)
+  hist(biodeg_test[[i]] ,main=i,xlab="x",label=TRUE, plot = TRUE)
 }
 
 ```

@@ -1,0 +1,34 @@
+---
+title: "ROC Model Test Performance"
+output: html_document
+---
+```{r}
+
+library(pROC)
+```
+
+```{r}
+y_pred_test <- read.csv('../data/test-results/y_pred.csv')
+y_pred_test <- lapply(y_pred_test, function(x) (as.factor(x)))
+y_pred_test <- as.data.frame(y_pred_test)
+
+```
+
+
+```{r}
+roc_knn <- roc(as.numeric(y_pred_test$knn), as.numeric(y_pred_test$obs))
+roc_nsc <- roc(as.numeric(y_pred_test$nsc), as.numeric(y_pred_test$obs))
+roc_plsda <- roc(as.numeric(y_pred_test$plsda), as.numeric(y_pred_test$obs))
+roc_cart <- roc(as.numeric(y_pred_test$M1.2.CART), as.numeric(y_pred_test$obs))
+roc_c50 <- roc(as.numeric(y_pred_test$M1.3.C5.0), as.numeric(y_pred_test$obs))
+
+
+
+plot(roc_knn, col = "blue")
+plot(roc_nsc, col = "red", add = TRUE)
+plot(roc_plsda, col = "purple", add = TRUE)
+plot(roc_cart, col = "cyan", add = TRUE)
+plot(roc_c50, col = "green", add = TRUE)
+legend(0.0, 1.0, legend=c("KNN: 0.835", "NSC: 0.820", "PLSDA: 0.871", "CART: 0.854", "C5.0: 0.856"), col=c("blue", "red", "purple","cyan","green"), lty=1, cex=0.8, box.lty=0, title = "AUC Values:")
+
+```
