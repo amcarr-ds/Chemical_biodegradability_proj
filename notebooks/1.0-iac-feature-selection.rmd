@@ -10,8 +10,8 @@ set.seed(100)
 ```
 ```{r}
 # Loading transformed data to perform modeling
-biodeg_train <- read.csv("../data/biodeg_train_trans.csv", header = TRUE, sep = ",")
-biodeg_test <- read.csv("../data/biodeg_test_trans.csv", header = TRUE, sep = ",")
+biodeg_train <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
+biodeg_test <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
 response_train <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
 response_test <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
 
@@ -40,6 +40,6 @@ biodeg_test_features <- biodeg_test[,biodeg_features$optVariables]
 
 # Saving subsetted dataset
 ```{r}
-write.csv(biodeg_train_features,"../data/biodeg_train_trans_features.csv", row.names = FALSE)
-write.csv(biodeg_test_features,"../data/biodeg_test_trans_features.csv", row.names = FALSE)
+write.csv(biodeg_train_features,"../data/univariate-selection-data/biodeg_train_univariate.csv", row.names = FALSE)
+write.csv(biodeg_test_features,"../data/univariate-selection-data/biodeg_test_univariate.csv", row.names = FALSE)
 ```

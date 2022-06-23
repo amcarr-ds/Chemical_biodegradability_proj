@@ -14,8 +14,8 @@ set.seed(100)
 
 ```{r}
 # Loading transformed data to perform modeling
-biodeg_train <- read.csv("../data/biodeg_train_trans.csv", header = TRUE, sep = ",")
-biodeg_test <- read.csv("../data/biodeg_test_trans.csv", header = TRUE, sep = ",")
+biodeg_train <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
+biodeg_test <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
 response_train <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
 response_test <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
 
@@ -38,14 +38,15 @@ ctrl <- trainControl(method = "repeatedcv",
 plsdaFit <- train(x = biodeg_train,
                 y = response_train,
                 method = "pls",
-                tuneGrid = expand.grid(ncomp = 1:10),
+                tuneGrid = expand.grid(ncomp = 1:41),
+                preProcess = c("center", "scale"),
                 metric = "ROC",
                 trControl = ctrl)
 plsdaFit
 
 y_pred_test$plsda <- predict(plsdaFit, biodeg_test)
 
-confusionMatrix(y_pred_test$PLSDA, y_pred_test$obs, positive = "RB")
+confusionMatrix(y_pred_test$plsda, y_pred_test$obs, positive = "RB")
 ```
 
 ```{r}
@@ -53,27 +54,3 @@ confusionMatrix(y_pred_test$PLSDA, y_pred_test$obs, positive = "RB")
 write.csv(y_pred_test,"../data/test-results/y_pred.csv", row.names = FALSE)
 ```
 
-```{r}
-biodeg_train <- read.csv("../data/biodeg_train_trans_features.csv", header = TRUE, sep = ",")
-biodeg_test <- read.csv("../data/biodeg_test_trans_features.csv", header = TRUE, sep = ",")
-```
-```{r}
-ctrl <- trainControl(method = "repeatedcv",
-                     repeats = 5,
-                     summaryFunction = twoClassSummary,
-                     classProbs = TRUE,
-                     savePredictions = TRUE)
-
-plsdaFit <- train(x = biodeg_train,
-                  y = response_train,
-                  method = "pls",
-                  tuneGrid = expand.grid(ncomp = 1:10),
-                  metric = "ROC",
-                  trControl = ctrl)
-plsdaFit
-
-testResults <- data.frame(obs = response_test,
-                          PLSDA = predict(plsdaFit, biodeg_test))
-
-confusionMatrix(testResults$PLSDA, testResults$obs, positive = "RB")
-```
