@@ -97,17 +97,18 @@ test_x01_trans_df02 <- predict(x01_df01_train_fit02, test_x01_df01)
 set.seed(100)
 # Citation:
 # Larose, C. D., & Larose, D. T. (2019). Data science using Python and R. John Wiley & Sons.
-train_x01_trans_df02_pca01 <- principal(r = train_x01_trans_df02, rotate = "varimax", nfactors = 32)
+train_x01_trans_df02_cor_mtx01 <- cor(train_x01_trans_df02)
+train_x01_trans_df02_cor_mtx01
+train_x01_trans_df02_pca01 <- principal(r = train_x01_trans_df02_cor_mtx01, rotate = "none", nfactors = 32)
 train_x01_trans_df02_pca01
-train_x01_trans_df02_pca01$values
-plot(train_x01_trans_df02_pca01$values, type = "b", main = "Plot of Eigenvalues", ylab = "Value", xlab = "Component")
+
+plot(train_x01_trans_df02_pca01$values, type = "b", main = "Plot of Unrotated Eigenvalues", ylab = "Value", xlab = "Component")
 abline(h = 1, lty = 2)
 
+train_x01_trans_df02_pca01$loadings
 
-train_x01_trans_df02_pca02 <- princomp(x = train_x01_trans_df02)
-train_x01_trans_df02_pca02
-screeplot(train_x01_trans_df02_pca02, type = "lines")
-abline(h = 1, lty = 2)
+train_x01_trans_df02_high_cor_cols <- findCorrelation(train_x01_trans_df02_cor_mtx01)
+head(train_x01_trans_df02[,train_x01_trans_df02_high_cor_cols], 1)
 ```
 
 ```{r}
