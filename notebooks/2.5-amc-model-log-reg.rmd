@@ -60,20 +60,22 @@ test_y01_df01 <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
 train_y01_vc01 <- as.factor(train_y01_df01[["x"]])
 test_y01_vc01 <- as.factor(test_y01_df01[["x"]])
 
+train_x02_df01 <- read.csv("../data/univariate-selection-data/biodeg_train_univariate.csv", header = TRUE, sep = ",")
+test_x02_df01 <- read.csv("../data/univariate-selection-data/biodeg_test_univariate.csv", header = TRUE, sep = ",")
+
 test_pred_model_outcomes <- read.csv("../data/test-results/y_pred.csv", header = TRUE, sep = ",")
 ```
 
 ## Setting up for models
 ```{r}
 set.seed(100)
-train_y01_vc01_2cl_ctl <- trainControl(method = "repeatedcv",
-                                       repeats = 5,
+train_y01_vc01_2cl_ctl <- trainControl(method = "cv",
                                        summaryFunction = twoClassSummary,
                                        classProbs = TRUE,
                                        savePredictions = TRUE)
 ```
 
-## Models 5.1 and 5.2 (*M~5.1~* & *M~5.2~*): General Logistic Regression (GLR)
+## Model 5.1 (*M~5.1~*): Logistic Regression (LR)
 ```{r, fig.height=5, fig.width=10, warning=FALSE}
 # Train & test LR model
 set.seed(100)
@@ -84,7 +86,10 @@ m5v1_glr <- train(x = train_x01_df01, y = train_y01_vc01,
                   trControl = train_y01_vc01_2cl_ctl)
 
 test_pred_model_outcomes$M5.1.GLR <- predict(m5v1_glr, test_x01_df01)
+```
 
+## Model 5.2 (*M~5.2~*): General Logistic Regression (GLR) w/ PCA
+```{r, fig.height=5, fig.width=10, warning=FALSE}
 # Train & test LR model using principal component analysis (PCA)
 set.seed(100)
 m5v2_glr <- train(x = train_x01_df01, y = train_y01_vc01,
@@ -94,6 +99,18 @@ m5v2_glr <- train(x = train_x01_df01, y = train_y01_vc01,
                   trControl = train_y01_vc01_2cl_ctl)
 
 test_pred_model_outcomes$M5.2.GLR_PCA <- predict(m5v2_glr, test_x01_df01)
+```
+
+## Model 5.3 (*M~5.3~*): General Logistic Regression (GLR) w/ Feature Selection
+```{r, fig.height=5, fig.width=10, warning=FALSE}
+# Train & test LR model using selected features
+set.seed(100)
+m5v3_glr <- train(x = train_x02_df01, y = train_y01_vc01,
+                  method = "glm",
+                  metric = "ROC",
+                  trControl = train_y01_vc01_2cl_ctl)
+
+test_pred_model_outcomes$M5.3.GLR_Selected <- predict(m5v3_glr, test_x02_df01)
 ```
 
 ## Model 6.1 (*M~6.1~*): Penalized Logistic Regression (PLR)
@@ -111,6 +128,18 @@ m6v1_plr <- train(x = train_x01_df01, y = train_y01_vc01,
 test_pred_model_outcomes$M6.1.PLR <- predict(m6v1_plr, test_x01_df01)
 ```
 
+## Model 6.2 (*M~6.2~*): Penalized Logistic Regression (PLR) w/ Feature Selection
+```{r, fig.height=5, fig.width=10}
+# Lambda controls regularization; alpha regulates region: 1 = lasso, 0 = ridge, 0<a<1 = combo
+set.seed(100)
+m6v2_plr <- train(x = train_x02_df01, y = train_y01_vc01,
+                  method = "glmnet",
+                  metric = "ROC",
+                  trControl = train_y01_vc01_2cl_ctl,
+                  tuneGrid = m6v1_plr_grd)
+test_pred_model_outcomes$M6.2.PLR_Selected <- predict(m6v2_plr, test_x02_df01)
+```
+
 ```{r, fig.height=7, fig.width=10}
 sig <- 3
 m5v1_glr$results
@@ -125,10 +154,16 @@ m5v2_glr_pred <- m5v2_glr$pred$obs
 m5v2_glr_roc <- roc(response = m5v2_glr_pred,
                     predictor = m5v2_glr$pred$RB,
                     levels = levels(m5v2_glr_pred))
+confusionMatrix(m5v2_glr, norm = "none")
 levels(m5v2_glr_pred)
 rev(levels(m5v2_glr_pred))
 
-confusionMatrix(m5v2_glr, norm = "none")
+m5v3_glr$results
+m5v3_glr_pred <- m5v3_glr$pred$obs
+m5v3_glr_roc <- roc(response = m5v3_glr_pred,
+                    predictor = m5v3_glr$pred$RB,
+                    levels = levels(m5v3_glr_pred))
+confusionMatrix(m5v3_glr, norm = "none")
 
 m6v1_plr$bestTune
 m6v1_plr
@@ -140,23 +175,39 @@ m6v1_plr_roc <- roc(response = m6v1_plr_pred,
                     levels = levels(m6v1_plr_pred))
 confusionMatrix(m6v1_plr, norm = "none")
 
+m6v2_plr$bestTune
+m6v2_plr
+mean(m6v2_plr$results$ROC)
+plot(m6v2_plr)
+m6v2_plr_pred <- m6v2_plr$pred$obs
+m6v2_plr_roc <- roc(response = m6v2_plr_pred,
+                    predictor = m6v2_plr$pred$RB,
+                    levels = levels(m6v2_plr_pred))
+confusionMatrix(m6v2_plr, norm = "none")
+
 models_compare <- resamples(list(M5.1.GLR = m5v1_glr,
                                  M5.2.GLR_PCA = m5v2_glr,
-                                 M6.1.PLR = m6v1_plr))
+                                 M5.3.GLR_Selected = m5v3_glr,
+                                 M6.1.PLR = m6v1_plr,
+                                 M6.2.PLR_Selected = m6v2_plr))
 models_compare_summ <- summary(models_compare)
 models_compare_summ
 
 # Compare ROC curves
 plot(m5v1_glr_roc, col = 'blue', legacy.axes = TRUE)
 plot(m5v2_glr_roc, add = TRUE, col = 'orange', legacy.axes = TRUE)
+plot(m5v3_glr_roc, add = TRUE, col = 'red', legacy.axes = TRUE)
 plot(m6v1_plr_roc, add = TRUE, col = 'black', legacy.axes = TRUE)
-legend("bottomright", legend=c("LR", "LR-PCA" , "PLR"),
-       col=c("blue", "orange", "black"), lwd = 2)
+plot(m6v2_plr_roc, add = TRUE, col = 'green', legacy.axes = TRUE)
+legend("bottomright", legend=c("GLR", "GLR-PCA", "GLR-Selected", "PLR", "PLR-Selected"),
+       col=c("blue", "orange", "red", "black", "green"), lwd = 2)
 title(main = "Compare ROC curves from different models", outer = TRUE, line = -1)
 
 print(paste0("Model 5.1: GLR AUC = ", round(m5v1_glr_roc$auc, sig)))
 print(paste0("Model 5.2: GLR-PCA AUC = ", round(m5v2_glr_roc$auc, sig)))
+print(paste0("Model 5.3: GLR-Selected AUC = ", round(m5v3_glr_roc$auc, sig)))
 print(paste0("Model 6.1: PLR AUC = ", round(m6v1_plr_roc$auc, sig)))
+print(paste0("Model 6.2: PLR-Selected AUC = ", round(m6v2_plr_roc$auc, sig)))
 
 m6v1_plr_vip <- varImp(m6v1_plr, scale = FALSE)
 m6v1_plr_vip
@@ -164,12 +215,14 @@ plot(m6v1_plr_vip)
 
 confusionMatrix(test_pred_model_outcomes$M5.1.GLR, as.factor(test_pred_model_outcomes$obs), positive = "RB")
 confusionMatrix(test_pred_model_outcomes$M5.2.GLR_PCA, as.factor(test_pred_model_outcomes$obs), positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M5.3.GLR_Selected, as.factor(test_pred_model_outcomes$obs), positive = "RB")
 confusionMatrix(test_pred_model_outcomes$M6.1.PLR, as.factor(test_pred_model_outcomes$obs), positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M6.2.PLR_Selected, as.factor(test_pred_model_outcomes$obs), positive = "RB")
 ```
 
 ```{r}
 write.csv(test_pred_model_outcomes,
-          "../data/test-results/05-06_y_pred.csv", row.names = FALSE)
+          "../data/test-results/y_pred_amc.csv", row.names = FALSE)
 write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),
           "../data/05-06_biodeg_test_resamp_results.csv", row.names = FALSE)
 ```

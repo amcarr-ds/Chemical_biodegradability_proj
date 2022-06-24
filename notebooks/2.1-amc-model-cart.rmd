@@ -65,33 +65,10 @@ test_y01_vc01 <- as.factor(test_y01_df01[["x"]])
 ## Setting up for models
 ```{r}
 set.seed(100)
-train_y01_vc01_2cl_ctl <- trainControl(method = "repeatedcv",
-                                       repeats = 5,
+train_y01_vc01_2cl_ctl <- trainControl(method = "cv",
                                        summaryFunction = twoClassSummary,
                                        classProbs = TRUE,
                                        savePredictions = TRUE)
-```
-
-## Model 1.0 (*M~1.0~*): CART DT Using `rpart()`
-```{r, fig.height=8, fig.width=10}
-train_xy01_df01 <- data.frame(train_x01_df01, train_y01_df01)
-
-# Train model
-set.seed(100)
-m1v0_cart <- rpart(x ~ ., data = train_xy01_df01, method = "class")
-rpart.plot(m1v0_cart, type = 5, extra = 104)
-
-# Use trained model to predict y on train data
-m1v0_cart_y_pred_df01 <- predict(object = m1v0_cart, newdata = train_x01_df01, type = "class")
-
-# Confirm confusion matrix results
-confusionMatrix(table(m1v0_cart_y_pred_df01, train_y01_df01$x), positive = "RB")
-
-# Use trained model to predict y on test data
-test_m1v0_cart_y_pred_df01 <- predict(object = m1v0_cart, newdata = test_x01_df01, type = "class")
-
-# Confirm confusion matrix results
-confusionMatrix(table(test_m1v0_cart_y_pred_df01, test_y01_df01$x), positive = "RB")
 ```
 
 ## Model 1.1 (*M~1.1~*): CART DT Using `train()`
@@ -112,7 +89,6 @@ test_pred_model_outcomes <- data.frame(obs = test_y01_vc01,
 set.seed(100)
 m1v2_c50 <- train(x = train_x01_df01, y = train_y01_vc01,
                    method = "C5.0Tree",
-                   tuneLength = 40,
                    metric = "ROC",
                    trControl = train_y01_vc01_2cl_ctl
                    )
@@ -140,7 +116,7 @@ models_compare <- resamples(list(M1.1.CART = m1v1_cart,
 models_compare_summ <- summary(models_compare)
 models_compare_summ
 
-twoClassSummary(m1v1_cart$pred, lev = c("NRB", "RB"))
+#twoClassSummary(m1v1_cart$pred, lev = c("NRB", "RB"))
 
 # Compare ROC curves
 plot(m1v1_cart_roc, col = 'blue', legacy.axes = TRUE)

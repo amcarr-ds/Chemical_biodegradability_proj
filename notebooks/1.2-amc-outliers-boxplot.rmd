@@ -48,7 +48,7 @@ library(scales)
 ```
 
 ## Create function to generate boxplots for continuous variables
-```{r, fig.height=10, fig.width=10}
+```{r}
 # Define function to produce formatted boxplots
 box_comp <- function(xcol = c(), df = NA, rtn_met = TRUE) {
   sig <- 3
@@ -63,11 +63,8 @@ box_comp <- function(xcol = c(), df = NA, rtn_met = TRUE) {
                                         "Range",
                                         "Min",
                                         "Max",
-                                        "IQR Outlier Limit",
                                         "25th Percentile",
                                         "75th Percentile",
-                                        "Lower Outlier Threshold",
-                                        "Upper Outlier Threshold",
                                         "Subset w/o Outliers:",
                                         "Count",
                                         "%",
@@ -97,7 +94,7 @@ box_comp <- function(xcol = c(), df = NA, rtn_met = TRUE) {
     var_othigh <- var_q3 + var_iqr_lim
     
     # Subset non-outlier data 
-    var_non_otlr_df01 <- subset(df, (abs(df_s1_trans) < 3))
+    var_non_otlr_df01 <- subset(df, (abs(df_s1_trans) <= 3))
     #var_non_otlr_df01 <- subset(df, (df_s1 > var_otlow & df_s1 < var_othigh))
     df_s2 <- var_non_otlr_df01[, var]
 
@@ -134,11 +131,8 @@ box_comp <- function(xcol = c(), df = NA, rtn_met = TRUE) {
                        round(var01_range, sig),
                        round(var01_min, sig),
                        round(var01_max, sig),
-                       paste0("+/-", round(var_iqr_lim, sig)),
                        round(var_q1, sig),
                        round(var_q3, sig),
-                       round(var_otlow, sig),
-                       round(var_othigh, sig),
                        "",
                        as.character(dim(var_non_otlr_df01)[1]),
                        paste0(nonoutlier_perc, "%"),
@@ -176,7 +170,7 @@ test_y01_vc01 <- test_y01_df01[["x"]]
 ```
 
 ## Run function to create comparative boxplots
-```{r}
+```{r, fig.height=10, fig.width=10}
 x01_lst01 <- c("SpMax_L",
                "J_Dz.e.",
                "nHM",
@@ -224,9 +218,7 @@ x01_lst02 <- c("SpMax_L",
                "HyWi_B.m.",
                "LOC",
                "SpMax_A",
-               "SpMax_B.m.",
-               "Psi_i_A",
-               "nN")
+               "Psi_i_A")
 
 x01_lst03 <- c("C.")
 
@@ -274,6 +266,9 @@ x01_lst14 <- c("nX")
 
 x01_lst15 <- c("Psi_i_1d")
 
+x01_lst16 <- c("SpMax_B.m.",
+               "nN")
+
 train_x01_df01_cols01 <- colnames(train_x01_df01)
 train_x01_df01_metrics <- box_comp(xcol = train_x01_df01_cols01, df = train_x01_df01)
 train_x01_df01_metrics
@@ -293,7 +288,10 @@ box_comp(xcol = x01_lst12, df = subset(x = train_x01_df01, select = x01_lst12), 
 box_comp(xcol = x01_lst13, df = subset(x = train_x01_df01, select = x01_lst13), rtn_met = FALSE)
 box_comp(xcol = x01_lst14, df = subset(x = train_x01_df01, select = x01_lst14), rtn_met = FALSE)
 box_comp(xcol = x01_lst15, df = subset(x = train_x01_df01, select = x01_lst15), rtn_met = FALSE)
+box_comp(xcol = x01_lst16, df = subset(x = train_x01_df01, select = x01_lst16), rtn_met = FALSE)
+```
 
+```{r, fig.height=8, fig.width=5}
 train_x01_df01[train_x01_df01$nCIR > 68,]
 train_x01_df01[train_x01_df01$F04.C.N. > 33,]
 train_x01_df01[train_x01_df01$F03.C.N. > 44,]
@@ -301,23 +299,32 @@ train_x01_df01[train_x01_df01$F03.C.N. > 44,]
 train_x01_df02 <- train_x01_df01[train_x01_df01$nCIR < 68,]
 train_x01_df02 <- train_x01_df02[train_x01_df02$F04.C.N. < 33,]
 train_x01_df02 <- train_x01_df02[train_x01_df02$F03.C.N. < 44,]
-#train_x01_df02
+
+box_comp(xcol = x01_lst05, df = subset(x = train_x01_df01, select = x01_lst05), rtn_met = FALSE)
 box_comp(xcol = x01_lst05, df = subset(x = train_x01_df02, select = x01_lst05), rtn_met = FALSE)
 box_comp(xcol = x01_lst07, df = subset(x = train_x01_df02, select = x01_lst07), rtn_met = FALSE)
 ```
 
+
 ```{r}
 train_x01_df01_tbl01 <- table(train_x01_df01$B01.C.Br.)
 train_x01_df01_tbl02 <- rbind(train_x01_df01_tbl01, round(prop.table(train_x01_df01_tbl01), 3))
+rownames(train_x01_df01_tbl02) <- c("Count", "%")
 train_x01_df01_tbl02
 
 train_x01_df01_tbl03 <- table(train_x01_df01$B03.C.Cl.)
 train_x01_df01_tbl04 <- rbind(train_x01_df01_tbl03, round(prop.table(train_x01_df01_tbl03), 3))
+rownames(train_x01_df01_tbl04) <- c("Count", "%")
 train_x01_df01_tbl04
 
 train_x01_df01_tbl05 <- table(train_x01_df01$B04.C.Br.)
 train_x01_df01_tbl06 <- rbind(train_x01_df01_tbl05, round(prop.table(train_x01_df01_tbl05), 3))
+rownames(train_x01_df01_tbl06) <- c("Count", "%")
 train_x01_df01_tbl06
+```
+
+```{r}
+sapply(train_x01_df01, function(x) skewness(x))
 ```
 
 
