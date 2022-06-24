@@ -12,6 +12,10 @@ y_pred_test <- read.csv('../data/test-results/y_pred.csv')
 y_pred_test <- lapply(y_pred_test, function(x) (as.factor(x)))
 y_pred_test <- as.data.frame(y_pred_test)
 
+test_y01_df01 <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
+test_dt_y01_pred_df01 <- read.csv("../data/model-output/y_pred_dt.csv", header = TRUE, sep = ",")
+test_lr_y01_pred_df01 <- read.csv("../data/model-output/y_pred_lr.csv", header = TRUE, sep = ",")
+test_pred_model_outcomes <- data.frame(test_y01_df01, test_dt_y01_pred_df01, test_lr_y01_pred_df01)
 ```
 
 

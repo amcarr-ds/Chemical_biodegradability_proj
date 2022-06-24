@@ -82,6 +82,7 @@ m1v1_cart <- train(x = train_x01_df01, y = train_y01_vc01,
                    )
 test_pred_model_outcomes <- data.frame(obs = test_y01_vc01,
                                        M1.1.CART = predict(m1v1_cart, test_x01_df01))
+test_pred_raw <- data.frame(M1.1.CART = predict(m1v1_cart, test_x01_df01))
 ```
 
 ## Model 1.2 (*M~1.2~*): C5.0 Using `train()`
@@ -93,6 +94,7 @@ m1v2_c50 <- train(x = train_x01_df01, y = train_y01_vc01,
                    trControl = train_y01_vc01_2cl_ctl
                    )
 test_pred_model_outcomes$M1.2.C5.0 = predict(m1v2_c50, test_x01_df01)
+test_pred_raw$M1.2.C5.0 = predict(m1v2_c50, test_x01_df01)
 ```
 
 ```{r, fig.height=8, fig.width=10}
@@ -150,8 +152,9 @@ rpart.plot(m1v1_cart$finalModel, type = 5, extra = 104)
 ```
 
 ```{r}
-write.csv(test_pred_model_outcomes,
-          "../data/01_biodeg_test_outcomes.csv", row.names = FALSE)
+#write.csv(test_pred_model_outcomes, "../data/01_biodeg_test_outcomes.csv", row.names = FALSE)
+write.csv(test_pred_raw,
+          "../data/model-output/y_pred_dt.csv", row.names = FALSE)
 write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),
-          "../data/01_biodeg_test_resamp_results.csv", row.names = FALSE)
+          "../data/resampling-results/resamp_results_dt.csv", row.names = FALSE)
 ```
