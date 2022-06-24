@@ -104,12 +104,13 @@ test_pred_raw$M5.2.GLR_PCA <- predict(m5v2_glr, test_x01_df01)
 m5v2_glr$rotation
 ```
 
-## Model 5.3 (*M~5.3~*): General Logistic Regression (GLR) w/ Feature Selection
+## Model 5.3 (*M~5.3~*): General Logistic Regression (GLR) w/ RF Univariate Analysis Feature Selection
 ```{r, fig.height=5, fig.width=10, warning=FALSE}
 # Train & test LR model using selected features
 set.seed(100)
 m5v3_glr <- train(x = train_x02_df01, y = train_y01_vc01,
                   method = "glm",
+                  preProcess = c("BoxCox", "center", "scale", "spatialSign"),
                   metric = "ROC",
                   trControl = train_y01_vc01_2cl_ctl)
 
@@ -133,12 +134,13 @@ test_pred_model_outcomes$M6.1.PLR <- predict(m6v1_plr, test_x01_df01)
 test_pred_raw$M6.1.PLR <- predict(m6v1_plr, test_x01_df01)
 ```
 
-## Model 6.2 (*M~6.2~*): Penalized Logistic Regression (PLR) w/ Feature Selection
+## Model 6.2 (*M~6.2~*): Penalized Logistic Regression (PLR) w/ RF Univariate Analysis Feature Selection
 ```{r, fig.height=5, fig.width=10}
 # Lambda controls regularization; alpha regulates region: 1 = lasso, 0 = ridge, 0<a<1 = combo
 set.seed(100)
 m6v2_plr <- train(x = train_x02_df01, y = train_y01_vc01,
                   method = "glmnet",
+                  preProcess = c("BoxCox", "center", "scale", "spatialSign"),
                   metric = "ROC",
                   trControl = train_y01_vc01_2cl_ctl,
                   tuneGrid = m6v1_plr_grd)
