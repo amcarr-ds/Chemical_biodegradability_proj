@@ -110,7 +110,7 @@ m5v2_glr$rotation
 set.seed(100)
 m5v3_glr <- train(x = train_x02_df01, y = train_y01_vc01,
                   method = "glm",
-                  preProcess = c("BoxCox", "center", "scale", "spatialSign"),
+                  preProcess = c("nzv", "BoxCox", "center", "scale", "spatialSign"),
                   metric = "ROC",
                   trControl = train_y01_vc01_2cl_ctl)
 
@@ -140,7 +140,7 @@ test_pred_raw$M6.1.PLR <- predict(m6v1_plr, test_x01_df01)
 set.seed(100)
 m6v2_plr <- train(x = train_x02_df01, y = train_y01_vc01,
                   method = "glmnet",
-                  preProcess = c("BoxCox", "center", "scale", "spatialSign"),
+                  preProcess = c("nzv", "BoxCox", "center", "scale", "spatialSign"),
                   metric = "ROC",
                   trControl = train_y01_vc01_2cl_ctl,
                   tuneGrid = m6v1_plr_grd)
@@ -221,11 +221,22 @@ m6v1_plr_vip <- varImp(m6v1_plr, scale = FALSE)
 m6v1_plr_vip
 plot(m6v1_plr_vip)
 
-confusionMatrix(test_pred_model_outcomes$M5.1.GLR, as.factor(test_pred_model_outcomes$obs), positive = "RB")
-confusionMatrix(test_pred_model_outcomes$M5.2.GLR_PCA, as.factor(test_pred_model_outcomes$obs), positive = "RB")
-confusionMatrix(test_pred_model_outcomes$M5.3.GLR_Univ, as.factor(test_pred_model_outcomes$obs), positive = "RB")
-confusionMatrix(test_pred_model_outcomes$M6.1.PLR, as.factor(test_pred_model_outcomes$obs), positive = "RB")
-confusionMatrix(test_pred_model_outcomes$M6.2.PLR_Univ, as.factor(test_pred_model_outcomes$obs), positive = "RB")
+confusionMatrix(test_pred_raw$M5.1.GLR, test_y01_vc01, positive = "RB")
+confusionMatrix(test_pred_raw$M5.2.GLR_PCA, test_y01_vc01, positive = "RB")
+confusionMatrix(test_pred_raw$M5.3.GLR_Univ, test_y01_vc01, positive = "RB")
+confusionMatrix(test_pred_raw$M6.1.PLR, test_y01_vc01, positive = "RB")
+confusionMatrix(test_pred_raw$M6.2.PLR_Univ, test_y01_vc01, positive = "RB")
+
+write.csv(data.frame(m5v1_glr$pred$obs, m5v1_glr$pred$RB),
+          "../data/model-output/y_prob_m5v1.csv", row.names = FALSE)
+write.csv(data.frame(m5v2_glr$pred$obs, m5v2_glr$pred$RB),
+          "../data/model-output/y_prob_m5v2.csv", row.names = FALSE)
+write.csv(data.frame(m5v3_glr$pred$obs, m5v3_glr$pred$RB),
+          "../data/model-output/y_prob_m5v3.csv", row.names = FALSE)
+write.csv(data.frame(m6v1_plr$pred$obs, m6v1_plr$pred$RB),
+          "../data/model-output/y_prob_m6v1.csv", row.names = FALSE)
+write.csv(data.frame(m6v2_plr$pred$obs, m6v2_plr$pred$RB),
+          "../data/model-output/y_prob_m6v2.csv", row.names = FALSE)
 ```
 
 ```{r}

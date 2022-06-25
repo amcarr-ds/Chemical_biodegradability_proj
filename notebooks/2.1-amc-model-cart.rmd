@@ -118,8 +118,6 @@ models_compare <- resamples(list(M1.1.CART = m1v1_cart,
 models_compare_summ <- summary(models_compare)
 models_compare_summ
 
-#twoClassSummary(m1v1_cart$pred, lev = c("NRB", "RB"))
-
 # Compare ROC curves
 plot(m1v1_cart_roc, col = 'blue', legacy.axes = TRUE)
 plot(m1v2_c50_roc, add = TRUE, col = 'black', legacy.axes = TRUE)
@@ -138,8 +136,16 @@ m1v2_c50_vip <- varImp(m1v2_c50, scale = FALSE)
 m1v2_c50_vip
 plot(m1v2_c50_vip)
 
-confusionMatrix(test_pred_model_outcomes$M1.1.CART, test_pred_model_outcomes$obs, positive = "RB")
-confusionMatrix(test_pred_model_outcomes$M1.2.C5.0, test_pred_model_outcomes$obs, positive = "RB")
+confusionMatrix(test_pred_raw$M1.1.CART, test_y01_vc01, positive = "RB")
+#m1v1_cart_y_pred_summ <- data.frame(obs = test_y01_vc01,
+#                                    pred = predict(m1v1_cart, test_x01_df01))
+#twoClassSummary(m1v1_cart_y_pred_summ, lev = c("RB", "NRB"))
+
+confusionMatrix(test_pred_raw$M1.2.C5.0, test_y01_vc01, positive = "RB")
+#m1v2_c50_y_pred_summ <- data.frame(obs = test_y01_vc01,
+#                                   pred = predict(m1v2_c50, test_x01_df01))
+#twoClassSummary(m1v2_c50_y_pred_summ, lev = c("RB", "NRB"))
+
 plot(m1v1_cart)
 ```
 
