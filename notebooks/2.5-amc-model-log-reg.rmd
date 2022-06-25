@@ -101,7 +101,6 @@ m5v2_glr <- train(x = train_x01_df01, y = train_y01_vc01,
 
 test_pred_model_outcomes$M5.2.GLR_PCA <- predict(m5v2_glr, test_x01_df01)
 test_pred_raw$M5.2.GLR_PCA <- predict(m5v2_glr, test_x01_df01)
-m5v2_glr$rotation
 ```
 
 ## Model 5.3 (*M~5.3~*): General Logistic Regression (GLR) w/ RF Univariate Analysis Feature Selection
@@ -157,6 +156,7 @@ m5v1_glr_roc <- roc(response = m5v1_glr_pred,
                     levels = levels(m5v1_glr_pred))
 confusionMatrix(m5v1_glr, norm = "none")
 
+m5v2_glr
 m5v2_glr$results
 m5v2_glr_pred <- m5v2_glr$pred$obs
 m5v2_glr_roc <- roc(response = m5v2_glr_pred,

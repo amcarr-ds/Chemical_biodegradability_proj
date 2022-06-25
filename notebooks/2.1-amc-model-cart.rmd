@@ -99,6 +99,7 @@ test_pred_raw$M1.2.C5.0 = predict(m1v2_c50, test_x01_df01)
 
 ```{r, fig.height=8, fig.width=10}
 sig <- 3
+m1v1_cart
 m1v1_cart$results
 m1v1_cart_pred <- m1v1_cart$pred$obs
 m1v1_cart_roc <- roc(response = m1v1_cart_pred,
