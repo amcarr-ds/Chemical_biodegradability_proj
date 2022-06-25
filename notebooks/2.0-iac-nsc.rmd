@@ -6,7 +6,6 @@ author: "Ivan A Chavez"
 ```{r}
 # Loading packages and setting seed
 library(caret)
-library(pROC)
 set.seed(100)
 ```
 ```{r}
@@ -19,20 +18,30 @@ response_test <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
 response_train <- as.factor(as.matrix(response_train))
 response_test <- as.factor(as.matrix(response_test))
 
-# Pulling test outcome data to add results and transforming each coulmn to a factor
-y_pred_test <- read.csv("../data/test-results/y_pred.csv", header = TRUE, sep = ",")
-y_pred_test <- lapply(y_pred_test, function(x) (as.factor(x)))
-
 ```
+
+
 ```{r}
 
-ctrl <- trainControl(method = "repeatedcv",
-                     repeats = 5,
+ctrl <- trainControl(method = "cv",
+                       number = 5,
+                        summaryFunction = twoClassSummary,
+                        classProbs = TRUE,
+                        savePredictions = TRUE)
+
+ctrl_10 <- trainControl(method = "cv",
                      summaryFunction = twoClassSummary,
                      classProbs = TRUE,
                      savePredictions = TRUE)
 
-nscFit <- train(x = biodeg_train,
+nscFit_noPre <- train(x = biodeg_train,
+                y = response_train,
+                method = "pam",
+                tuneGrid = data.frame(threshold = seq(0, 25, length = 30)),
+                metric = "ROC",
+                trControl = ctrl)
+
+nscFit_cs <- train(x = biodeg_train,
                 y = response_train,
                 method = "pam",
                 tuneGrid = data.frame(threshold = seq(0, 25, length = 30)),
@@ -40,26 +49,60 @@ nscFit <- train(x = biodeg_train,
                 metric = "ROC",
                 trControl = ctrl)
 
-nscFit
+nscFit_10_noPre <- train(x = biodeg_train,
+                      y = response_train,
+                      method = "pam",
+                      tuneGrid = data.frame(threshold = seq(0, 25, length = 30)),
+                      metric = "ROC",
+                      trControl = ctrl_10)
 
-#nscFitImp <- varImp(nscFit, scale = FALSE)
-#plot(nscFitImp, top = 30, scales = list(y = list(cex = .90)))
+nscFit_10_cs <- train(x = biodeg_train,
+                   y = response_train,
+                   method = "pam",
+                   tuneGrid = data.frame(threshold = seq(0, 25, length = 30)),
+                   preProcess = c('center','scale'),
+                   metric = "ROC",
+                   trControl = ctrl_10)
 
-#y_pred_test$nsc <- predict(nscFit, biodeg_test)
+#nscFit_10
 
-confusionMatrix(y_pred_test$nsc, y_pred_test$obs, positive = "RB")
+#nscFit_5
 
-## Plot the ROC curve for the hold-out set
-nscRoc <- roc(response = nscFit$pred$obs,
-              predictor = nscFit$pred$RB,
-              levels = rev(levels(nscFit$pred$obs)))
+```
 
-plot(nscRoc, legacy.axes = TRUE)
-#nscRoc$auc
+
+```{r}
+
+test_preds <- data.frame(obs = response_test,
+                         M8_NSC_no_pre = predict(nscFit_noPre, biodeg_test))
+
+test_preds$M8_NSC_CS <- predict(nscFit_cs, biodeg_test)
+test_preds$M8_NSC_10_no_pre <- predict(nscFit_10_noPre, biodeg_test)
+test_preds$M8_10_NSC_CS <- predict(nscFit_10_cs, biodeg_test)
+
+
+
+models_compare <- resamples(list(M8_NSC_no_pre = nscFit_noPre, M8_NSC_CS = nscFit_cs))
+
+models_compare_summ <- summary(models_compare)
+models_compare_summ
+
+models_compare_10 <- resamples(list(M8_NSC_10_no_pre = nscFit_10_noPre, M8_10_NSC_CS = nscFit_10_cs))
+
+models_compare_summ_10 <- summary(models_compare_10)
+models_compare_summ_10
+
+
 ```
 
 ```{r}
 
-write.csv(y_pred_test,"../data/test-results/y_pred.csv", row.names = FALSE)
+write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),
+          "../data/resampling-results/resamp_results_nsc_5.csv", row.names = FALSE)
+
+write.csv(data.frame(models_compare_summ_10$models, models_compare_summ_10$statistics),
+          "../data/resampling-results/resamp_results_nsc_10.csv", row.names = FALSE)
+
+write.csv(test_preds[,-1],"../data/model-output/y_pred_nsc.csv", row.names = FALSE)
 ```
 

@@ -6,7 +6,6 @@ author: "Ivan A Chavez"
 ```{r}
 # Loading packages and setting seed
 library(caret)
-library(pROC)
 set.seed(100)
 ```
 ```{r}
@@ -16,85 +15,75 @@ biodeg_test <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
 response_train <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
 response_test <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
 
+biodeg_train_uni <- read.csv("../data/univariate-selection-data/biodeg_train_univariate.csv", header = TRUE, sep = ",")
+biodeg_test_uni <- read.csv("../data/univariate-selection-data/biodeg_test_univariate.csv", header = TRUE, sep = ",")
+
 response_train <- as.factor(as.matrix(response_train))
 response_test <- as.factor(as.matrix(response_test))
 
-# Pulling test outcome data to add results and transforming each coulmn to a factor
-y_pred_test <- read.csv("../data/test-results/05-06_y_pred.csv", header = TRUE, sep = ",")
-y_pred_test <- lapply(y_pred_test, function(x) (as.factor(x)))
 
 ```
 ```{r}
 
-ctrl <- trainControl(method = "repeatedcv",
-                     repeats = 5,
+ctrl <- trainControl(method = "cv",
+                     number = 5,
                      summaryFunction = twoClassSummary,
                      classProbs = TRUE,
                      savePredictions = TRUE)
 
-knnFit <- train(x = biodeg_train, y = response_train,
+knnFit_pre <- train(x = biodeg_train, y = response_train,
                  method = "knn",
                  tuneGrid = data.frame(k = 1:20),
                  preProcess = c("nzv", "center", "scale"),
                  metric = "ROC",
                  trControl = ctrl)
 
-#knnFit
-
-y_pred_test$knn <- predict(knnFit, biodeg_test)
-
-# Accuracy: 0.8429 Sn: 0.7887  Sp: 0.8705
-confusionMatrix(y_pred_test$knn, y_pred_test$obs, positive = "RB")
-
-#nscCM <- confusionMatrix(nscFit, norm = "none")
-#nscCM
-
-## Plot the ROC curve for the hold-out set
-knnRoc <- roc(response = knnFit$pred$obs,
-              predictor = knnFit$pred$RB,
-              levels = rev(levels(knnFit$pred$obs)))
-
-plot(knnRoc, legacy.axes = TRUE)
-#nscRoc$auc
-```
-```{r}
-
-biodeg_train_uni <- read.csv("../data/univariate-selection-data/biodeg_train_univariate.csv", header = TRUE, sep = ",")
-biodeg_test_uni <- read.csv("../data/univariate-selection-data/biodeg_test_univariate.csv", header = TRUE, sep = ",")
-```
-```{r}
-
-set.seed(100)
-
-ctrl <- trainControl(method = "repeatedcv",
-                     repeats = 5,
-                     summaryFunction = twoClassSummary,
-                     classProbs = TRUE,
-                     savePredictions = TRUE)
-
-knnFit <- train(x = biodeg_train_uni, y = response_train,
+knnFit_uni <- train(x = biodeg_train_uni, y = response_train,
                 method = "knn",
                 tuneGrid = data.frame(k = 1:20),
-                preProcess = c("nzv", "center", "scale"),
+                preProcess = c("center", "scale"),
                 metric = "ROC",
                 trControl = ctrl)
 
-#knnFit
+knnFit_uni_nzv <- train(x = biodeg_train_uni, y = response_train,
+                    method = "knn",
+                    tuneGrid = data.frame(k = 1:20),
+                    preProcess = c("nzv","center", "scale"),
+                    metric = "ROC",
+                    trControl = ctrl)
 
-y_pred_test$knn_uni <- predict(knnFit, biodeg_test_uni)
 
-# Accuracy: 0.9014 Sn: 0.9014  Sp: 0.9281
-confusionMatrix(y_pred_test$knn_uni, y_pred_test$obs, positive = "RB")
 
-## Plot the ROC curve for the hold-out set
-knnRoc <- roc(response = knnFit$pred$obs,
-              predictor = knnFit$pred$RB,
-              levels = rev(levels(knnFit$pred$obs)))
+#knnFit_pre
 
-plot(knnRoc, legacy.axes = TRUE)
-#nscRoc$auc
+#knnFit_uni
+
+#knnFit_uni_nzv
+
 ```
+
+
 ```{r}
 
-write.csv(y_pred_test,"../data/test-results/y_pred.csv", row.names = FALSE)
+test_preds <- data.frame(obs = response_test,
+                         M2_KNN = predict(knnFit_pre, biodeg_test))
+
+test_preds$M2_KNN_uni <- predict(knnFit_uni, biodeg_test)
+test_preds$M2_KNN_uni_nvz <- predict(knnFit_uni_nzv, biodeg_test)
+
+
+
+models_compare <- resamples(list(M2_KNN = knnFit_pre, M2_KNN_uni = knnFit_uni, M2_KNN_uni_nvz = knnFit_uni_nzv))
+
+models_compare_summ <- summary(models_compare)
+models_compare_summ
+
+```
+
+
+
+```{r}
+write.csv(test_preds[,-1],"../data/model-output/y_pred_knn.csv", row.names = FALSE)
+write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),
+          "../data/resampling-results/resamp_results_knn.csv", row.names = FALSE)
 ```

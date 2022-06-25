@@ -7,7 +7,6 @@ author: "Ivan A Chavez"
 ```{r}
 # Loading packages and setting seed
 library(caret)
-library(pROC)
 set.seed(100)
 ```
 
@@ -22,15 +21,12 @@ response_test <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
 response_train <- as.factor(as.matrix(response_train))
 response_test <- as.factor(as.matrix(response_test))
 
-# Pulling test outcome data to add results and transforming each coulmn to a factor
-y_pred_test <- read.csv("../data/test-results/y_pred.csv", header = TRUE, sep = ",")
-y_pred_test <- lapply(y_pred_test, function(x) (as.factor(x)))
-
 ```
 
 ```{r}
-ctrl <- trainControl(method = "repeatedcv",
-                     repeats = 5,
+
+ctrl <- trainControl(method = "cv",
+                     number = 5,
                      summaryFunction = twoClassSummary,
                      classProbs = TRUE,
                      savePredictions = TRUE)
@@ -42,15 +38,22 @@ plsdaFit <- train(x = biodeg_train,
                 preProcess = c("center", "scale"),
                 metric = "ROC",
                 trControl = ctrl)
-plsdaFit
 
-y_pred_test$plsda <- predict(plsdaFit, biodeg_test)
 
-confusionMatrix(y_pred_test$plsda, y_pred_test$obs, positive = "RB")
+#plsdaFit
+
+
 ```
 
 ```{r}
 
-write.csv(y_pred_test,"../data/test-results/y_pred.csv", row.names = FALSE)
+test_preds <- data.frame(obs = response_test,
+                         M3_PLSDA = predict(plsdaFit, biodeg_test))
+
+```
+
+```{r}
+
+write.csv(test_preds[,-1],"../data/model-output/y_pred_plsda.csv", row.names = FALSE)
 ```
 
