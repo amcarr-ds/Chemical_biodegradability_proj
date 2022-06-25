@@ -7,8 +7,11 @@ output: word_document
 
 
 ```{r}
+install.packages("mlbench")
 library(caret)
+library(tidyverse)
 library(pROC)
+library(mlbench)
 library(randomForest)
 set.seed(100)
 ```
@@ -32,10 +35,12 @@ y_pred_test <- lapply(y_pred_test, function(x) (as.factor(x)))
 #Support_Vector_Machines
 
 ```{r}
-ctrl <- trainControl(method = "repeatedcv", repeats = 5, summaryFunction = twoClassSummary, classProbs = TRUE, savePredictions = TRUE)
+ctrl <- trainControl(method = "cv", number = 5, summaryFunction = twoClassSummary, classProbs = TRUE,   savePredictions = TRUE)
 
 #svm fit
-SVMFIT <- train(x = biodeg_train, y = response_train, method = "svmLinear", preProcess = c("center","scale"),  trControl = ctrl)
+#SVMFIT <- train(x = biodeg_train, y = response_train, method = "svmLinear", preProcess = c("center","scale"),  trControl = ctrl)
+
+SVMFIT <- train(x = biodeg_train, y = response_train, method = "svmRadial", preProcess = c("center","scale"),  trControl = ctrl)
 
 svm_pred<- data.frame(obs = response_test, SVM = predict(SVMFIT, biodeg_test))
 svm_ROC = pROC::roc(response = response_train, predictor = svm_Pred[, 1])
@@ -44,7 +49,6 @@ svm_AUC = svm_ROC$auc[1]
 svm = list(classifier = SVMFIT, predictions = svm_Pred, roc = svm_ROC, auc = svm_AUC)
 SVMFIT
 ```
-
 
 
 
@@ -81,7 +85,7 @@ plot(lda_ROC, legacy.axes = TRUE)'
 
 ```{r }
 set.seed(100)
-ctrl <- trainControl(method = "repeatedcv", repeats = 5, classProbs = TRUE)
+
 rf_fit = randomForest(x=biodeg_train, y = response_train, preProc = c("center", "scale"), metric = "ROC", trControl = ctrl)
 
 rf_Pred  = predict(rf_fit,biodeg_test, type = "prob") 
