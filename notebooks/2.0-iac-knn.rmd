@@ -54,9 +54,9 @@ knnFit_uni_nzv <- train(x = biodeg_train_uni, y = response_train,
 
 
 
-#knnFit_pre
+knnFit_pre
 
-#knnFit_uni
+knnFit_uni
 
 #knnFit_uni_nzv
 
@@ -80,7 +80,10 @@ models_compare_summ
 
 ```
 
-
+```{r}
+confusionMatrix(test_preds$M2_KNN, test_preds$obs, positive = "RB")
+confusionMatrix(test_preds$M2_KNN_uni, test_preds$obs, positive = "RB")
+```
 
 ```{r}
 write.csv(test_preds[,-1],"../data/model-output/y_pred_knn.csv", row.names = FALSE)

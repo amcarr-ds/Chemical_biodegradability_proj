@@ -64,7 +64,7 @@ nscFit_10_cs <- train(x = biodeg_train,
                    metric = "ROC",
                    trControl = ctrl_10)
 
-#nscFit_10
+nscFit_10_cs
 
 #nscFit_5
 
@@ -93,6 +93,10 @@ models_compare_summ_10 <- summary(models_compare_10)
 models_compare_summ_10
 
 
+```
+
+```{r}
+confusionMatrix(test_preds$M8_10_NSC_CS, test_preds$obs, positive = "RB")
 ```
 
 ```{r}

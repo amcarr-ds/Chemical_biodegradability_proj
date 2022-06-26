@@ -31,6 +31,7 @@ ctrl <- trainControl(method = "cv",
                      classProbs = TRUE,
                      savePredictions = TRUE)
 
+#tune ncomp = 16
 plsdaFit <- train(x = biodeg_train,
                 y = response_train,
                 method = "pls",
@@ -40,7 +41,7 @@ plsdaFit <- train(x = biodeg_train,
                 trControl = ctrl)
 
 
-#plsdaFit
+plsdaFit
 
 
 ```
@@ -49,6 +50,8 @@ plsdaFit <- train(x = biodeg_train,
 
 test_preds <- data.frame(obs = response_test,
                          M3_PLSDA = predict(plsdaFit, biodeg_test))
+
+confusionMatrix(test_preds$M3_PLSDA, test_preds$obs, positive = "RB")
 
 ```
 
