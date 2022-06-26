@@ -54,7 +54,7 @@ SVMFIT
 
 ```{r}
 Test_svm <- data.frame(obs = response_test,svm = predict(SVMFIT, biodeg_test))
-View(Test_rf)
+
 ```
 
 
@@ -62,8 +62,8 @@ View(Test_rf)
 #Linear_Discriminant_Analysis
 ```{r }
 set.seed(100)
-
-lda_fit = train(x=biodeg_train, y = response_train, method = "lda", preProc = c("center", "scale"), metric = "ROC", trControl = ctrl)
+ctrl1 <- trainControl(method = "cv", number = 10, summaryFunction = twoClassSummary, classProbs = TRUE,   savePredictions = TRUE)
+lda_fit = train(x=biodeg_train, y = response_train, method = "lda", preProc = c("center", "scale"), metric = "ROC", trControl = ctrl1)
 
 lda_Pred  = predict(lda_fit,biodeg_train, type = "prob") 
 lda_ROC = pROC::roc(response = response_train, predictor = lda_Pred[, 1])
@@ -77,8 +77,6 @@ plot(lda_ROC, legacy.axes = TRUE)
 
 ```{r}
 Test_lda <- data.frame(obs = response_test,lda = predict(lda_fit, biodeg_test))
-'confusionMatrix(Test_Op$lda, Test_Op$obs, positive = "RB")
-plot(lda_ROC, legacy.axes = TRUE)'
 ```
 
 #RandomForest
@@ -86,7 +84,7 @@ plot(lda_ROC, legacy.axes = TRUE)'
 ```{r }
 set.seed(100)
 
-rf_fit = randomForest(x=biodeg_train, y = response_train, preProc = c("center", "scale"), metric = "ROC", trControl = ctrl)
+rf_fit = randomForest(x=biodeg_train, y = response_train, preProc = c("center", "scale"), metric = "ROC", trControl = ctrl1)
 
 rf_Pred  = predict(rf_fit,biodeg_test, type = "prob") 
 rf_ROC = pROC::roc(response = response_train, predictor = rf_Pred[, 1])

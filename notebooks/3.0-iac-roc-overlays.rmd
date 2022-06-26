@@ -35,26 +35,29 @@ test_pred_model_outcomes <- lapply(test_pred_model_outcomes, function(x) (as.fac
 
 
 ```{r}
-roc_knn <- roc(as.numeric(test_pred_model_outcomes$M2_KNN), as.numeric(test_pred_model_outcomes$obs))
-roc_nsc <- roc(as.numeric(test_pred_model_outcomes$M8_NSC_CS), as.numeric(test_pred_model_outcomes$obs))
-roc_plsda <- roc(as.numeric(test_pred_model_outcomes$M3_PLSDA), as.numeric(test_pred_model_outcomes$obs))
-roc_cart <- roc(as.numeric(test_pred_model_outcomes$M1.1.CART), as.numeric(test_pred_model_outcomes$obs))
-roc_c50 <- roc(as.numeric(test_pred_model_outcomes$M1.2.C5.0), as.numeric(test_pred_model_outcomes$obs))
+#roc_knn <- roc(as.numeric(test_pred_model_outcomes$M2_KNN), as.numeric(test_pred_model_outcomes$obs))
+#roc_nsc <- roc(as.numeric(test_pred_model_outcomes$M8_NSC_CS), as.numeric(test_pred_model_outcomes$obs))
+#roc_plsda <- roc(as.numeric(test_pred_model_outcomes$M3_PLSDA), as.numeric(test_pred_model_outcomes$obs))
+#roc_cart <- roc(as.numeric(test_pred_model_outcomes$M1.1.CART), as.numeric(test_pred_model_outcomes$obs))
+#roc_c50 <- roc(as.numeric(test_pred_model_outcomes$M1.2.C5.0), as.numeric(test_pred_model_outcomes$obs))
 
 roc_m6v1_obs <- as.factor(test_m6v1_y01_prob_df01$m6v1_plr.pred.obs)
 roc_m6v1 <- roc(response = roc_m6v1_obs,
                 predictor = test_m6v1_y01_prob_df01$m6v1_plr.pred.RB,
                 levels = levels(roc_m6v1_obs))
 
-confusionMatrix(test_pred_model_outcomes$obs, test_pred_model_outcomes$M1.1.CART, positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M1.1.CART, test_pred_model_outcomes$obs, positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M2_KNN, test_pred_model_outcomes$obs, positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M2_KNN_uni, test_pred_model_outcomes$obs, positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M8_10_NSC_CS, test_pred_model_outcomes$obs, positive = "RB")
 plot(roc_m6v1, col = "blue")
 
 
-plot(roc_knn, col = "blue")
-plot(roc_nsc, col = "red", add = TRUE)
-plot(roc_plsda, col = "purple", add = TRUE)
-plot(roc_cart, col = "cyan", add = TRUE)
-plot(roc_c50, col = "green", add = TRUE)
+#plot(roc_knn, col = "blue")
+#plot(roc_nsc, col = "red", add = TRUE)
+#plot(roc_plsda, col = "purple", add = TRUE)
+#plot(roc_cart, col = "cyan", add = TRUE)
+#plot(roc_c50, col = "green", add = TRUE)
 legend(0.0, 1.0, legend=c("KNN: 0.835", "NSC: 0.820", "PLSDA: 0.871", "CART: 0.854", "C5.0: 0.856"), col=c("blue", "red", "purple","cyan","green"), lty=1, cex=0.8, box.lty=0, title = "AUC Values:")
 
 ```
