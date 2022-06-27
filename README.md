@@ -45,5 +45,6 @@ This project aims to validate the study "Quantitative Structure-Activity Relatio
 ## References
 
 Mansouri, K., Ringsted, T., Ballabio, D., Todeschini, R., & Consonni, V. (2013a). Quantitative structure-activity relationship models for ready biodegradability of chemicals. Journal of Chemical Information and Modeling, 53, 867–878. https://doi.org/10.1021/ci4000213
+
 Mansouri, K., Ringsted, T., Ballabio, D., Todeschini, R., & Consonni, V. (2013b). QSAR biodegradation [Data set]. UCI Machine Learning Repository. http://archive.ics.uci.edu/ml/datasets/QSAR+biodegradation#
 
