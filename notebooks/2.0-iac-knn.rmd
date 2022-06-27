@@ -1,0 +1,92 @@
+---
+title: "K Nearest Neighbor Model"
+output: html_document
+author: "Ivan A Chavez"
+---
+```{r}
+# Loading packages and setting seed
+library(caret)
+set.seed(100)
+```
+```{r}
+# Loading transformed data to perform modeling
+biodeg_train <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
+biodeg_test <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
+response_train <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
+response_test <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
+
+biodeg_train_uni <- read.csv("../data/univariate-selection-data/biodeg_train_univariate.csv", header = TRUE, sep = ",")
+biodeg_test_uni <- read.csv("../data/univariate-selection-data/biodeg_test_univariate.csv", header = TRUE, sep = ",")
+
+response_train <- as.factor(as.matrix(response_train))
+response_test <- as.factor(as.matrix(response_test))
+
+
+```
+```{r}
+
+ctrl <- trainControl(method = "cv",
+                     number = 5,
+                     summaryFunction = twoClassSummary,
+                     classProbs = TRUE,
+                     savePredictions = TRUE)
+
+knnFit_pre <- train(x = biodeg_train, y = response_train,
+                 method = "knn",
+                 tuneGrid = data.frame(k = 1:20),
+                 preProcess = c("nzv", "center", "scale"),
+                 metric = "ROC",
+                 trControl = ctrl)
+
+knnFit_uni <- train(x = biodeg_train_uni, y = response_train,
+                method = "knn",
+                tuneGrid = data.frame(k = 1:20),
+                preProcess = c("center", "scale"),
+                metric = "ROC",
+                trControl = ctrl)
+
+knnFit_uni_nzv <- train(x = biodeg_train_uni, y = response_train,
+                    method = "knn",
+                    tuneGrid = data.frame(k = 1:20),
+                    preProcess = c("nzv","center", "scale"),
+                    metric = "ROC",
+                    trControl = ctrl)
+
+
+
+knnFit_pre
+
+knnFit_uni
+
+#knnFit_uni_nzv
+
+```
+
+
+```{r}
+
+test_preds <- data.frame(obs = response_test,
+                         M2_KNN = predict(knnFit_pre, biodeg_test))
+
+test_preds$M2_KNN_uni <- predict(knnFit_uni, biodeg_test)
+test_preds$M2_KNN_uni_nvz <- predict(knnFit_uni_nzv, biodeg_test)
+
+
+
+models_compare <- resamples(list(M2_KNN = knnFit_pre, M2_KNN_uni = knnFit_uni, M2_KNN_uni_nvz = knnFit_uni_nzv))
+
+models_compare_summ <- summary(models_compare)
+models_compare_summ
+
+```
+
+```{r}
+confusionMatrix(test_preds$M2_KNN, test_preds$obs, positive = "RB")
+confusionMatrix(test_preds$M2_KNN_uni, test_preds$obs, positive = "RB")
+```
+
+```{r}
+write.csv(test_preds[,-1],"../data/model-output/y_pred_knn.csv", row.names = FALSE)
+write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),
+          "../data/resampling-results/resamp_results_knn.csv", row.names = FALSE)
+```

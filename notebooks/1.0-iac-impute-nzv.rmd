@@ -1,0 +1,41 @@
+---
+title: "Data Imputing & Near Zero Values"
+output: html_document
+author: "Ivan A Chavez"
+---
+
+```{r}
+# Loading packages and setting seed
+library(caret)
+library(tidyverse)
+set.seed(100)
+```
+
+# Importing Train/Test Datasets
+```{r}
+biodeg_train <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
+biodeg_test <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
+```
+
+# No missing values for either test or train sets
+
+```{r}
+naByPredictor <- sapply(biodeg_train, function(x) sum(is.na(x)))
+naByPredictorSorted <- sort(naByPredictor, decreasing=TRUE)
+naByPredictorSorted
+```
+
+```{r}
+naByPredictor <- sapply(biodeg_test, function(x) sum(is.na(x)))
+naByPredictorSorted <- sort(naByPredictor, decreasing=TRUE)
+naByPredictorSorted
+```
+
+# Removing Near Zero Variance Predictors
+
+```{r}
+# Total cols are 41 and after filtering only 33 columns remain
+nearZeroIndices <- nearZeroVar(biodeg_train)
+filtered_biodeg_train <- biodeg_train[, -nearZeroIndices]
+filtered_biodeg_test <- biodeg_test[, -nearZeroIndices]
+```

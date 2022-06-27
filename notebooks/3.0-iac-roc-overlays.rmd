@@ -1,0 +1,63 @@
+---
+title: "ROC Model Test Performance"
+output: html_document
+---
+```{r}
+
+library(pROC)
+```
+
+```{r}
+y_pred_test <- read.csv('../data/test-results/y_pred.csv')
+y_pred_test <- lapply(y_pred_test, function(x) (as.factor(x)))
+y_pred_test <- as.data.frame(y_pred_test)
+
+test_y01_df01 <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
+test_y01_vc01 <- as.factor(test_y01_df01[["x"]])
+test_dt_y01_pred_df01 <- read.csv("../data/model-output/y_pred_dt.csv", header = TRUE, sep = ",")
+test_knn_y01_pred_df01 <- read.csv("../data/model-output/y_pred_knn.csv", header = TRUE, sep = ",")
+test_lr_y01_pred_df01 <- read.csv("../data/model-output/y_pred_lr.csv", header = TRUE, sep = ",")
+test_nsc_y01_pred_df01 <- read.csv("../data/model-output/y_pred_nsc.csv", header = TRUE, sep = ",")
+test_plsda_y01_pred_df01 <- read.csv("../data/model-output/y_pred_plsda.csv", header = TRUE, sep = ",")
+test_sr_y01_pred_df01 <- read.csv("../data/model-output/y_pred_sr.csv", header = TRUE, sep = ",")
+
+test_m6v1_y01_prob_df01 <- read.csv("../data/model-output/y_prob_m6v1.csv", header = TRUE, sep = ",")
+
+test_pred_model_outcomes <- data.frame(obs = test_y01_vc01,
+                                       test_dt_y01_pred_df01,
+                                       test_knn_y01_pred_df01,
+                                       test_lr_y01_pred_df01,
+                                       test_nsc_y01_pred_df01,
+                                       test_plsda_y01_pred_df01,
+                                       test_sr_y01_pred_df01)
+test_pred_model_outcomes <- lapply(test_pred_model_outcomes, function(x) (as.factor(x)))
+```
+
+
+```{r}
+#roc_knn <- roc(as.numeric(test_pred_model_outcomes$M2_KNN), as.numeric(test_pred_model_outcomes$obs))
+#roc_nsc <- roc(as.numeric(test_pred_model_outcomes$M8_NSC_CS), as.numeric(test_pred_model_outcomes$obs))
+#roc_plsda <- roc(as.numeric(test_pred_model_outcomes$M3_PLSDA), as.numeric(test_pred_model_outcomes$obs))
+#roc_cart <- roc(as.numeric(test_pred_model_outcomes$M1.1.CART), as.numeric(test_pred_model_outcomes$obs))
+#roc_c50 <- roc(as.numeric(test_pred_model_outcomes$M1.2.C5.0), as.numeric(test_pred_model_outcomes$obs))
+
+roc_m6v1_obs <- as.factor(test_m6v1_y01_prob_df01$m6v1_plr.pred.obs)
+roc_m6v1 <- roc(response = roc_m6v1_obs,
+                predictor = test_m6v1_y01_prob_df01$m6v1_plr.pred.RB,
+                levels = levels(roc_m6v1_obs))
+
+confusionMatrix(test_pred_model_outcomes$M1.1.CART, test_pred_model_outcomes$obs, positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M2_KNN, test_pred_model_outcomes$obs, positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M2_KNN_uni, test_pred_model_outcomes$obs, positive = "RB")
+confusionMatrix(test_pred_model_outcomes$M8_10_NSC_CS, test_pred_model_outcomes$obs, positive = "RB")
+plot(roc_m6v1, col = "blue")
+
+
+#plot(roc_knn, col = "blue")
+#plot(roc_nsc, col = "red", add = TRUE)
+#plot(roc_plsda, col = "purple", add = TRUE)
+#plot(roc_cart, col = "cyan", add = TRUE)
+#plot(roc_c50, col = "green", add = TRUE)
+legend(0.0, 1.0, legend=c("KNN: 0.835", "NSC: 0.820", "PLSDA: 0.871", "CART: 0.854", "C5.0: 0.856"), col=c("blue", "red", "purple","cyan","green"), lty=1, cex=0.8, box.lty=0, title = "AUC Values:")
+
+```

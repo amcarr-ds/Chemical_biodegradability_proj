@@ -1,0 +1,167 @@
+---
+title: "ADS503-02-SP22 - Final Project: Team 3"
+author: "Carr_Aaron"
+date: "06/27/2022"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+header-includes:
+- \usepackage{fvextra}
+- \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+---
+
+## RMarkdown global setup
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r global.options, include=TRUE}
+knitr::opts_chunk$set(
+  fig.align = 'center'
+  )
+```
+
+```{r lib, message=FALSE}
+library(AppliedPredictiveModeling)
+library(BioStatR)
+library(car)
+library(caret)
+library(class)
+library(corrplot)
+library(datasets)
+library(dplyr)
+library(e1071)
+library(Hmisc)
+library(mlbench)
+library(ggplot2)
+library(gridExtra)
+library(partykit)
+library(pROC)
+library(psych)
+library(randomForest)
+library(RANN)
+library(ROCR)
+library(rpart)
+library(rpart.plot)
+library(scales)
+```
+
+## Importing Train/Test Datasets
+```{r}
+train_x01_df01 <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
+test_x01_df01 <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
+
+train_y01_df01 <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
+test_y01_df01 <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
+
+train_y01_vc01 <- as.factor(train_y01_df01[["x"]])
+test_y01_vc01 <- as.factor(test_y01_df01[["x"]])
+```
+
+## Setting up for models
+```{r}
+set.seed(100)
+train_y01_vc01_2cl_ctl <- trainControl(method = "cv",
+                                       summaryFunction = twoClassSummary,
+                                       classProbs = TRUE,
+                                       savePredictions = TRUE)
+```
+
+## Model 1.1 (*M~1.1~*): CART DT Using `train()`
+```{r}
+set.seed(100)
+m1v1_cart <- train(x = train_x01_df01, y = train_y01_vc01,
+                   method = "rpart",
+                   tuneLength = 40,
+                   metric = "ROC",
+                   trControl = train_y01_vc01_2cl_ctl
+                   )
+test_pred_model_outcomes <- data.frame(obs = test_y01_vc01,
+                                       M1.1.CART = predict(m1v1_cart, test_x01_df01))
+test_pred_raw <- data.frame(M1.1.CART = predict(m1v1_cart, test_x01_df01))
+```
+
+## Model 1.2 (*M~1.2~*): C5.0 Using `train()`
+```{r}
+set.seed(100)
+m1v2_c50 <- train(x = train_x01_df01, y = train_y01_vc01,
+                   method = "C5.0Tree",
+                   metric = "ROC",
+                   trControl = train_y01_vc01_2cl_ctl
+                   )
+test_pred_model_outcomes$M1.2.C5.0 = predict(m1v2_c50, test_x01_df01)
+test_pred_raw$M1.2.C5.0 = predict(m1v2_c50, test_x01_df01)
+```
+
+```{r, fig.height=8, fig.width=10}
+sig <- 3
+m1v1_cart
+m1v1_cart$results
+m1v1_cart_pred <- m1v1_cart$pred$obs
+m1v1_cart_roc <- roc(response = m1v1_cart_pred,
+                     predictor = m1v1_cart$pred$RB,
+                     levels = levels(m1v1_cart_pred))
+confusionMatrix(m1v1_cart, norm = "none")
+
+m1v2_c50$results
+m1v2_c50_pred <- m1v2_c50$pred$obs
+m1v2_c50_roc <- roc(response = m1v2_c50_pred,
+                    predictor = m1v2_c50$pred$RB,
+                    levels = levels(m1v2_c50_pred))
+confusionMatrix(m1v2_c50, norm = "none")
+
+models_compare <- resamples(list(M1.1.CART = m1v1_cart,
+                                 M1.2.C5.0 = m1v2_c50))
+models_compare_summ <- summary(models_compare)
+models_compare_summ
+
+# Compare ROC curves
+plot(m1v1_cart_roc, col = 'blue', legacy.axes = TRUE)
+plot(m1v2_c50_roc, add = TRUE, col = 'black', legacy.axes = TRUE)
+legend("bottomright", legend=c("CART", "C5.0"),
+       col=c("blue", "black"), lwd = 2)
+title(main = "Compare ROC curves from different models", outer = TRUE, line = -1)
+
+print(paste0("Model 1.1: CART AUC = ", round(m1v1_cart_roc$auc, sig)))
+print(paste0("Model 1.2: C5.0 AUC = ", round(m1v2_c50_roc$auc, sig)))
+
+m1v1_cart_vip <- varImp(m1v1_cart, scale = FALSE)
+m1v1_cart_vip
+plot(m1v1_cart_vip)
+
+m1v2_c50_vip <- varImp(m1v2_c50, scale = FALSE)
+m1v2_c50_vip
+plot(m1v2_c50_vip)
+
+confusionMatrix(test_pred_raw$M1.1.CART, test_y01_vc01, positive = "RB")
+#m1v1_cart_y_pred_summ <- data.frame(obs = test_y01_vc01,
+#                                    pred = predict(m1v1_cart, test_x01_df01))
+#twoClassSummary(m1v1_cart_y_pred_summ, lev = c("RB", "NRB"))
+
+confusionMatrix(test_pred_raw$M1.2.C5.0, test_y01_vc01, positive = "RB")
+#m1v2_c50_y_pred_summ <- data.frame(obs = test_y01_vc01,
+#                                   pred = predict(m1v2_c50, test_x01_df01))
+#twoClassSummary(m1v2_c50_y_pred_summ, lev = c("RB", "NRB"))
+
+plot(m1v1_cart)
+```
+
+```{r, fig.height=8, fig.width=10}
+# Citation: 
+# https://stackoverflow.com/questions/39636186/plot-decision-tree-in-r-caret
+rpart.plot(m1v1_cart$finalModel, type = 5, extra = 104)
+#m1v2_c50_tree <- as.party(m1v2_c50$pred)
+#plot.party(as.party(m1v2_c50[["pred"]]))
+```
+
+```{r}
+#write.csv(test_pred_model_outcomes, "../data/01_biodeg_test_outcomes.csv", row.names = FALSE)
+write.csv(test_pred_raw,
+          "../data/model-output/y_pred_dt.csv", row.names = FALSE)
+write.csv(data.frame(models_compare_summ$models, models_compare_summ$statistics),
+          "../data/resampling-results/resamp_results_dt.csv", row.names = FALSE)
+```

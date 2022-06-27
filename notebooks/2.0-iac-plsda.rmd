@@ -1,0 +1,62 @@
+---
+title: "Partial Least Squares Discriminate Analysis"
+output: html_document
+author: "Ivan A Chavez"
+---
+
+```{r}
+# Loading packages and setting seed
+library(caret)
+set.seed(100)
+```
+
+
+```{r}
+# Loading transformed data to perform modeling
+biodeg_train <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
+biodeg_test <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
+response_train <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
+response_test <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
+
+response_train <- as.factor(as.matrix(response_train))
+response_test <- as.factor(as.matrix(response_test))
+
+```
+
+```{r}
+
+ctrl <- trainControl(method = "cv",
+                     number = 5,
+                     summaryFunction = twoClassSummary,
+                     classProbs = TRUE,
+                     savePredictions = TRUE)
+
+#tune ncomp = 16
+plsdaFit <- train(x = biodeg_train,
+                y = response_train,
+                method = "pls",
+                tuneGrid = expand.grid(ncomp = 1:41),
+                preProcess = c("center", "scale"),
+                metric = "ROC",
+                trControl = ctrl)
+
+
+plsdaFit
+
+
+```
+
+```{r}
+
+test_preds <- data.frame(obs = response_test,
+                         M3_PLSDA = predict(plsdaFit, biodeg_test))
+
+confusionMatrix(test_preds$M3_PLSDA, test_preds$obs, positive = "RB")
+
+```
+
+```{r}
+
+write.csv(test_preds[,-1],"../data/model-output/y_pred_plsda.csv", row.names = FALSE)
+```
+

@@ -1,0 +1,75 @@
+---
+title: "Correlation and plots_SK"
+author: "Sreeja K"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r}
+# Loading packages and setting seed
+install.packages("corrplot")
+library(caret)
+library(tidyverse)
+library(corrplot)
+set.seed(100)
+```
+
+# Importing and assigning column names
+```{r}
+names <- c("SpMax_L", "J_Dz(e)", "nHM", "F01[N-N]", "F04[C-N]", "NssssC", "nCb-", "C%", "nCp", "nO", "F03[C-N]", "SdssC", "HyWi_B(m)", "LOC", "SM6_L", "F03[C-O]", "Me", "Mi", "nN-N", "nArNO2", "nCRX3", "SpPosA_B(p)", "nCIR", "B01[C-Br]", "B03[C-Cl]", "N-073", "SpMax_A", "Psi_i_1d", "B04[C-Br]", "SdO", "TI2_L", "nCrt", "C-026", "F02[C-N]", "nHDon", "SpMax_B(m)", "Psi_i_A", "nN", "SM6_B(m)", "nArCOOR", "nX", "experimental class")
+
+biodeg <- read.csv("../data/biodeg.csv", header = FALSE, sep = ";", col.names = names)
+
+```
+
+```{r}
+
+index_biodeg <- createDataPartition(biodeg$experimental.class, p=.80, list = FALSE)
+biodeg_trainset <- biodeg[index_biodeg,]
+biodeg_testset <- biodeg[-index_biodeg,]
+
+response_train <- biodeg_trainset[,42]
+response_test <- biodeg_testset[,42]
+
+biodeg_train <- biodeg_trainset[,-42]
+biodeg_test <- biodeg_testset[,-42]
+
+```
+
+#Correlation Matrices & plot
+
+```{r}
+#str(biodeg_train)
+biodeg_trainset[3:42] <- lapply(biodeg_trainset[3:42], as.numeric)
+biodeg_train[2:41] <- lapply(biodeg_train[2:41], as.numeric)
+
+
+
+x = biodeg_trainset[1:42]
+y = biodeg_train[1:41]
+Correlation_tr=cor(x, y)
+
+View(Correlation_tr)
+
+#assuming nX is the dependent variable
+x1 = biodeg_trainset[1:42]
+y1 = biodeg_train[41]
+Correlation_tr1=cor(x1, y1)
+
+View(Correlation_tr1)
+```
+
+```{r}
+Correlation_Mx = rcorr(as.matrix(biodeg_trainset))
+Correlation_Mx
+```
+
+```{r}
+mCoeff = Correlation_Mx$r
+mP_val = Correlation_Mx$P
+```
+
+```{r}
+corrplot(Correlation_tr)
+```
+

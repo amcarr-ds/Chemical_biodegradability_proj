@@ -1,0 +1,124 @@
+---
+title: "ADS503-02-SP22 - Final Project: Team 3"
+author: "Carr_Aaron"
+date: "06/27/2022"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+header-includes:
+- \usepackage{fvextra}
+- \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+---
+
+## RMarkdown global setup
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r global.options, include=TRUE}
+knitr::opts_chunk$set(
+  fig.align = 'center'
+  )
+```
+
+```{r lib, message=FALSE}
+library(AppliedPredictiveModeling)
+library(BioStatR)
+library(car)
+library(caret)
+library(class)
+library(corrplot)
+library(datasets)
+library(dplyr)
+library(e1071)
+library(Hmisc)
+library(mlbench)
+library(ggplot2)
+library(gridExtra)
+library(psych)
+library(randomForest)
+library(RANN)
+library(rpart)
+library(rpart.plot)
+library(scales)
+library(stats)
+```
+
+## Importing Train/Test Datasets
+```{r}
+train_x01_df01 <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
+test_x01_df01 <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
+
+train_y01_df01 <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
+test_y01_df01 <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
+
+train_y01_vc01 <- train_y01_df01[["x"]]
+test_y01_vc01 <- test_y01_df01[["x"]]
+```
+
+```{r, fig.height=8, fig.width=10}
+# Transform predictor set based on skew, centering, scaling, NZV, & outliers
+set.seed(100)
+x01_df01_train_fit01 <- preProcess(train_x01_df01,
+                                   method = c("BoxCox",
+                                              "center",
+                                              "scale",
+                                              "nzv",
+                                              "spatialSign"))
+x01_df01_train_fit01
+
+# Transform training set
+train_x01_trans_df01 <- predict(x01_df01_train_fit01, train_x01_df01)
+hist.data.frame(train_x01_trans_df01)
+
+# Transform test set using training set-based fit
+test_x01_trans_df01 <- predict(x01_df01_train_fit01, test_x01_df01)
+#_______________________________________________________________________________
+# Transform predictor set based on skew, centering, scaling, & NZV
+set.seed(100)
+x01_df01_train_fit02 <- preProcess(train_x01_df01,
+                                   method = c("BoxCox",
+                                              "center",
+                                              "scale",
+                                              "nzv"))
+x01_df01_train_fit02
+
+# Transform training set
+train_x01_trans_df02 <- predict(x01_df01_train_fit02, train_x01_df01)
+
+# Transform test set using training set-based fit
+test_x01_trans_df02 <- predict(x01_df01_train_fit02, test_x01_df01)
+
+# Perform principal components analysis (PCA) on transformed training set
+set.seed(100)
+# Citation:
+# Larose, C. D., & Larose, D. T. (2019). Data science using Python and R. John Wiley & Sons.
+train_x01_trans_df02_cor_mtx01 <- cor(train_x01_trans_df02)
+train_x01_trans_df02_cor_mtx01
+train_x01_trans_df02_pca01 <- principal(r = train_x01_trans_df02_cor_mtx01, rotate = "none", nfactors = 32)
+train_x01_trans_df02_pca01
+
+plot(train_x01_trans_df02_pca01$values, type = "b", main = "Plot of Unrotated Eigenvalues", ylab = "Value", xlab = "Component")
+abline(h = 1, lty = 2)
+
+train_x01_trans_df02_pca01$loadings
+
+train_x01_trans_df02_high_cor_cols <- findCorrelation(train_x01_trans_df02_cor_mtx01)
+head(train_x01_trans_df02[,train_x01_trans_df02_high_cor_cols], 1)
+```
+
+```{r}
+write.csv(train_x01_trans_df01,
+          "../data/biodeg_train_trans.csv", row.names = FALSE)
+write.csv(test_x01_trans_df01,
+          "../data/biodeg_test_trans.csv", row.names = FALSE)
+
+write.csv(train_x01_trans_df02,
+          "../data/biodeg_train_trans_wo_spasign.csv", row.names = FALSE)
+write.csv(test_x01_trans_df02,
+          "../data/biodeg_test_trans_wo_spasign.csv", row.names = FALSE)
+```

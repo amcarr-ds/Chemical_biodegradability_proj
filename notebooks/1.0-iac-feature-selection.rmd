@@ -1,0 +1,45 @@
+---
+title: "Univariate Feature Selection"
+output: html_document
+author: "Ivan A Chavez"
+---
+
+```{r}
+library(caret)
+set.seed(100)
+```
+```{r}
+# Loading transformed data to perform modeling
+biodeg_train <- read.csv("../data/biodeg_train.csv", header = TRUE, sep = ",")
+biodeg_test <- read.csv("../data/biodeg_test.csv", header = TRUE, sep = ",")
+response_train <- read.csv("../data/response_train.csv", header = TRUE, sep = ",")
+response_test <- read.csv("../data/response_test.csv", header = TRUE, sep = ",")
+
+response_train <- as.factor(as.matrix(response_train))
+response_test <- as.factor(as.matrix(response_test))
+```
+
+# Implementing Univariate Analysis to identify features of interest. Helperfunction used in control is random forest Selection by filtering(rfSBF).
+```{r}
+Ctrl <- sbfControl(functions = rfSBF, method = "repeatedcv", repeats = 5)
+
+
+biodeg_features <- sbf(biodeg_train, response_train, sbfControl = Ctrl)
+
+#biodeg_features
+
+biodeg_features$optVariables
+
+```
+
+# Subsetting based on univariate selected features
+```{r}
+biodeg_train_features <- biodeg_train[,biodeg_features$optVariables]
+biodeg_test_features <- biodeg_test[,biodeg_features$optVariables]
+```
+
+# Saving subsetted dataset
+```{r}
+write.csv(biodeg_train_features,"../data/univariate-selection-data/biodeg_train_univariate.csv", row.names = FALSE)
+write.csv(biodeg_test_features,"../data/univariate-selection-data/biodeg_test_univariate.csv", row.names = FALSE)
+```
